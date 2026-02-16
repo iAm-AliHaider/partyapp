@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const tabs = [
-  { href: "/home", label: "Home", icon: "🏠" },
-  { href: "/tasks", label: "Tasks", icon: "📋" },
-  { href: "/referrals", label: "Refer", icon: "🔗" },
-  { href: "/rankings", label: "Rank", icon: "🏆" },
-  { href: "/profile", label: "Profile", icon: "👤" },
-];
+import { useLanguage } from "@/components/LanguageContext";
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
+
+  const tabs = [
+    { href: "/home", label: t.nav.home, icon: "🏠" },
+    { href: "/tasks", label: t.nav.tasks, icon: "📋" },
+    { href: "/referrals", label: t.nav.refer, icon: "🔗" },
+    { href: "/rankings", label: t.nav.rank, icon: "🏆" },
+    { href: "/profile", label: t.nav.profile, icon: "👤" },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200"

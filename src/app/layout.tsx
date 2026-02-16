@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
+import { LanguageProvider } from "@/components/LanguageContext";
 
 export const metadata: Metadata = {
   title: "عوام راج — Pakistan Awaam Raaj Tehreek",
@@ -25,7 +26,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" dir="ltr">
+    <html lang="ur" dir="rtl">
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -34,7 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="antialiased">
         <SessionProvider>
-          <div className="max-w-lg mx-auto min-h-screen">{children}</div>
+          <LanguageProvider>
+            <div className="max-w-lg mx-auto min-h-screen">{children}</div>
+          </LanguageProvider>
         </SessionProvider>
       </body>
     </html>

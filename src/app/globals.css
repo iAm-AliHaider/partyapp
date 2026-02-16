@@ -20,8 +20,28 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /* LTR default */
+  html[dir="ltr"] {
+    font-family: "Inter", sans-serif;
+  }
+
+  /* RTL Urdu */
+  html[dir="rtl"] {
+    font-family: "Noto Nastaliq Urdu", "Inter", serif;
+    line-height: 2;
+  }
+
+  html[dir="rtl"] .font-mono,
+  html[dir="rtl"] input[type="tel"],
+  html[dir="rtl"] input[type="number"],
+  html[dir="rtl"] input[type="email"] {
+    font-family: "Inter", monospace;
+    direction: ltr;
+    text-align: left;
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    @apply bg-gray-50 text-gray-900 antialiased;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
@@ -87,9 +107,20 @@
   }
 }
 
-/* RTL support for Urdu */
-[dir="rtl"] {
-  font-family: "Noto Nastaliq Urdu", serif;
+/* RTL-specific adjustments */
+[dir="rtl"] .card {
+  text-align: right;
+}
+
+[dir="rtl"] .border-l-4 {
+  border-left: none;
+  border-right-width: 4px;
+}
+
+/* Keep numbers and codes LTR even in RTL */
+[dir="rtl"] .font-mono {
+  direction: ltr;
+  unicode-bidi: embed;
 }
 
 .skeleton {

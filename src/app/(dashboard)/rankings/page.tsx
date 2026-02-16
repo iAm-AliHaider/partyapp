@@ -4,15 +4,12 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import LeaderboardTable from "@/components/LeaderboardTable";
-
-const TABS = [
-  { key: "constituency", label: "My Constituency" },
-  { key: "national", label: "National" },
-];
+import { useLanguage } from "@/components/LanguageContext";
 
 export default function RankingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("national");
   const [entries, setEntries] = useState<any[]>([]);
   const [constituencies, setConstituencies] = useState<any[]>([]);
@@ -21,13 +18,9 @@ export default function RankingsPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") { router.push("/login"); return; }
-
-    // Load constituencies for dropdown
     fetch("/api/constituencies").then((r) => r.json()).then((data) => {
       setConstituencies(data.constituencies || []);
     });
-
-    // Default to national
     fetchRankings("national");
   }, [status, router]);
 
@@ -59,9 +52,14 @@ export default function RankingsPage() {
     if (id) fetchRankings("constituency", id);
   };
 
+  const TABS = [
+    { key: "constituency", label: t.rankings.myConstituency },
+    { key: "national", label: t.rankings.national },
+  ];
+
   return (
     <div className="page-container">
-      <h1 className="text-xl font-bold mb-4">Rankings</h1>
+      <h1 className="text-xl font-bold mb-4">{t.rankings.title}</h1>
 
       <div className="flex gap-2 mb-6">
         {TABS.map((tab) => (
@@ -75,9 +73,9 @@ export default function RankingsPage() {
       {activeTab === "constituency" && (
         <div className="mb-4">
           <select value={selectedConstituency} onChange={(e) => handleConstituencyChange(e.target.value)} className="input-field text-sm">
-            <option value="">Select Constituency</option>
+            <option value="">{t.rankings.selectConstituency}</option>
             {constituencies.map((c: any) => (
-              <option key={c.id} value={c.id}>{c.code} — {c.name} ({c._count?.members || 0} members)</option>
+              <option key={c.id} value={c.id}>{c.code} — {c.name} ({c._count?.members || 0})</option>
             ))}
           </select>
         </div>
@@ -92,11 +90,11 @@ export default function RankingsPage() {
       ) : (
         <div className="card text-center text-gray-400 py-12">
           <p className="text-4xl mb-3">🏆</p>
-          <p className="font-medium">No rankings yet</p>
+          <p className="font-medium">{t.rankings.noRankings}</p>
           <p className="text-xs mt-1">
             {activeTab === "constituency" && !selectedConstituency
-              ? "Select a constituency to view rankings"
-              : "Rankings are computed when members join"}
+              ? t.rankings.selectToView
+              : t.rankings.rankingsComputed}
           </p>
         </div>
       )}

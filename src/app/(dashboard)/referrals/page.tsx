@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
+import { useLanguage } from "@/components/LanguageContext";
 
 export default function ReferralsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t, locale } = useLanguage();
   const [referralCode, setReferralCode] = useState("...");
   const [stats, setStats] = useState<any>(null);
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -54,7 +56,7 @@ export default function ReferralsPage() {
   };
 
   const shareWhatsApp = () => {
-    const text = `🇵🇰 Join Pakistan Awaam Raaj Tehreek!\n\nBe part of the democratic revolution. Join using my referral:\n${shareUrl}\n\nReferral Code: ${referralCode}`;
+    const text = `${t.referral.shareMessage}\n${shareUrl}\n\nReferral Code: ${referralCode}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -64,7 +66,7 @@ export default function ReferralsPage() {
 
   return (
     <div className="page-container">
-      <h1 className="text-xl font-bold mb-6">Your Referrals</h1>
+      <h1 className="text-xl font-bold mb-6">{t.referral.title}</h1>
 
       {/* QR + Share */}
       <div className="card mb-6">
@@ -72,45 +74,45 @@ export default function ReferralsPage() {
           <div className="bg-white p-3 rounded-xl border-2 border-party-red/20 mb-4">
             <QRCodeSVG value={shareUrl} size={160} level="M" />
           </div>
-          <p className="text-sm text-gray-500 mb-1">Your Referral Code</p>
-          <p className="text-2xl font-mono font-bold text-party-red mb-4">{referralCode}</p>
+          <p className="text-sm text-gray-500 mb-1">{t.referral.yourCode}</p>
+          <p className="text-2xl font-mono font-bold text-party-red mb-4" dir="ltr">{referralCode}</p>
           <div className="flex gap-3 w-full">
             <button onClick={copyToClipboard} className="btn-secondary flex-1 text-sm">
-              {copied ? "✅ Copied!" : "📋 Copy Link"}
+              {copied ? t.referral.copied : t.referral.copyLink}
             </button>
             <button onClick={shareWhatsApp} className="btn-primary flex-1 text-sm">
-              📱 WhatsApp
+              {t.referral.whatsapp}
             </button>
           </div>
         </div>
       </div>
 
       {/* Score Breakdown */}
-      <h2 className="section-title">Referral Breakdown</h2>
+      <h2 className="section-title">{t.referral.breakdown}</h2>
       <div className="space-y-3 mb-6">
         <div className="card flex justify-between items-center">
-          <div><p className="font-semibold">Direct Referrals</p><p className="text-xs text-gray-500">10 points each</p></div>
+          <div><p className="font-semibold">{t.referral.direct}</p><p className="text-xs text-gray-500">10 {t.referral.pointsEach}</p></div>
           <div className="text-right">
             <p className="text-xl font-bold text-party-red">{stats?.directCount || 0}</p>
             <p className="text-xs text-gray-400">{stats?.directPoints || 0} pts</p>
           </div>
         </div>
         <div className="card flex justify-between items-center">
-          <div><p className="font-semibold">2nd Level</p><p className="text-xs text-gray-500">5 points each</p></div>
+          <div><p className="font-semibold">{t.referral.level2}</p><p className="text-xs text-gray-500">5 {t.referral.pointsEach}</p></div>
           <div className="text-right">
             <p className="text-xl font-bold text-blue-600">{stats?.level2Count || 0}</p>
             <p className="text-xs text-gray-400">{stats?.level2Points || 0} pts</p>
           </div>
         </div>
         <div className="card flex justify-between items-center">
-          <div><p className="font-semibold">3rd Level</p><p className="text-xs text-gray-500">2 points each</p></div>
+          <div><p className="font-semibold">{t.referral.level3}</p><p className="text-xs text-gray-500">2 {t.referral.pointsEach}</p></div>
           <div className="text-right">
             <p className="text-xl font-bold text-purple-600">{stats?.level3Count || 0}</p>
             <p className="text-xs text-gray-400">{stats?.level3Points || 0} pts</p>
           </div>
         </div>
         <div className="card flex justify-between items-center bg-party-gold/5">
-          <div><p className="font-semibold">Active Bonus</p><p className="text-xs text-gray-500">+3 per active member</p></div>
+          <div><p className="font-semibold">{t.referral.activeBonus}</p><p className="text-xs text-gray-500">{t.referral.perActive}</p></div>
           <div className="text-right">
             <p className="text-xl font-bold text-party-gold-dark">{stats?.activeCount || 0}</p>
             <p className="text-xs text-gray-400">{stats?.activePoints || 0} pts</p>
@@ -120,12 +122,12 @@ export default function ReferralsPage() {
 
       {/* Total */}
       <div className="card bg-party-red text-white text-center mb-6">
-        <p className="text-sm opacity-80">Total Score</p>
+        <p className="text-sm opacity-80">{t.referral.totalScore}</p>
         <p className="text-4xl font-bold">{stats?.totalScore || 0}</p>
       </div>
 
       {/* Recent Referrals */}
-      <h2 className="section-title">Recent Referrals</h2>
+      <h2 className="section-title">{t.referral.recentReferrals}</h2>
       {referrals.length > 0 ? (
         <div className="space-y-2">
           {referrals.map((ref: any, i: number) => (
@@ -143,7 +145,7 @@ export default function ReferralsPage() {
       ) : (
         <div className="card text-center text-gray-400 py-8">
           <p className="text-3xl mb-2">🔗</p>
-          <p className="text-sm">No referrals yet. Share your code to get started!</p>
+          <p className="text-sm">{t.referral.noReferrals}</p>
         </div>
       )}
     </div>

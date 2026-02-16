@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/components/LanguageContext";
 
 const ICONS: Record<string, string> = {
   REFERRAL_NEW: "🔗",
@@ -15,6 +16,7 @@ const ICONS: Record<string, string> = {
 export default function NotificationsPage() {
   const { status } = useSession();
   const router = useRouter();
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -62,9 +64,9 @@ export default function NotificationsPage() {
   return (
     <div className="page-container">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold">Notifications</h1>
+        <h1 className="text-xl font-bold">{t.notifications.title}</h1>
         {unreadCount > 0 && (
-          <button onClick={markAllRead} className="text-xs text-party-red font-semibold">Mark all read</button>
+          <button onClick={markAllRead} className="text-xs text-party-red font-semibold">{t.notifications.markAllRead}</button>
         )}
       </div>
 
@@ -85,8 +87,8 @@ export default function NotificationsPage() {
       ) : (
         <div className="card text-center text-gray-400 py-12">
           <p className="text-4xl mb-3">🔔</p>
-          <p className="font-medium">No notifications yet</p>
-          <p className="text-xs mt-1">You'll be notified about referrals, rank changes, and more</p>
+          <p className="font-medium">{t.notifications.noNotifications}</p>
+          <p className="text-xs mt-1">{t.notifications.notifiedAbout}</p>
         </div>
       )}
     </div>

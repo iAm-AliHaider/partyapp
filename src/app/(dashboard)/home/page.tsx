@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import MembershipCard from "@/components/MembershipCard";
 import Link from "next/link";
+import { useLanguage, LanguageToggle } from "@/components/LanguageContext";
 
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useLanguage();
   const [member, setMember] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -48,10 +50,13 @@ export default function HomePage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <p className="text-sm text-gray-500">خوش آمدید</p>
-          <h1 className="text-xl font-bold">{member?.name || "Dashboard"}</h1>
+          <p className="text-sm text-gray-500">{t.home.welcome}</p>
+          <h1 className="text-xl font-bold">{member?.name || t.home.dashboard}</h1>
         </div>
-        <Image src="/icons/party-logo.png" alt="Awaam Raaj" width={42} height={42} className="rounded-xl shadow-md border border-gray-200" />
+        <div className="flex items-center gap-2">
+          <LanguageToggle className="!bg-gray-100 !text-gray-600" />
+          <Image src="/icons/party-logo.png" alt="Awaam Raaj" width={42} height={42} className="rounded-xl shadow-md border border-gray-200" />
+        </div>
       </div>
 
       {/* Membership Card */}
@@ -77,40 +82,40 @@ export default function HomePage() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="stat-card">
           <p className="text-2xl font-bold text-party-red">{member?.rank || "—"}</p>
-          <p className="text-xs text-gray-500 mt-1">Your Rank</p>
+          <p className="text-xs text-gray-500 mt-1">{t.home.yourRank}</p>
         </div>
         <div className="stat-card">
           <p className="text-2xl font-bold text-party-red">{member?.score || 0}</p>
-          <p className="text-xs text-gray-500 mt-1">Your Score</p>
+          <p className="text-xs text-gray-500 mt-1">{t.home.yourScore}</p>
         </div>
         <div className="stat-card">
           <p className="text-2xl font-bold text-party-gold-dark">{member?._count?.referrals || 0}</p>
-          <p className="text-xs text-gray-500 mt-1">Referrals</p>
+          <p className="text-xs text-gray-500 mt-1">{t.home.referrals}</p>
         </div>
         <div className="stat-card">
           <p className="text-2xl font-bold text-green-600">{stats?.totalMembers || 0}</p>
-          <p className="text-xs text-gray-500 mt-1">Total Members</p>
+          <p className="text-xs text-gray-500 mt-1">{t.home.totalMembers}</p>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <h2 className="section-title">Quick Actions</h2>
+      <h2 className="section-title">{t.home.quickActions}</h2>
       <div className="grid grid-cols-2 gap-3 mb-6">
         <Link href="/referrals" className="card flex items-center gap-3 active:scale-95 transition-transform">
           <span className="text-2xl">🔗</span>
-          <div><p className="font-semibold text-sm">Share Code</p><p className="text-xs text-gray-500">Invite members</p></div>
+          <div><p className="font-semibold text-sm">{t.home.shareCode}</p><p className="text-xs text-gray-500">{t.home.inviteMembers}</p></div>
         </Link>
         <Link href="/rankings" className="card flex items-center gap-3 active:scale-95 transition-transform">
           <span className="text-2xl">🏆</span>
-          <div><p className="font-semibold text-sm">Leaderboard</p><p className="text-xs text-gray-500">Check rankings</p></div>
+          <div><p className="font-semibold text-sm">{t.home.leaderboard}</p><p className="text-xs text-gray-500">{t.home.checkRankings}</p></div>
         </Link>
         <Link href="/tasks" className="card flex items-center gap-3 active:scale-95 transition-transform">
           <span className="text-2xl">📋</span>
-          <div><p className="font-semibold text-sm">Tasks</p><p className="text-xs text-gray-500">Campaigns</p></div>
+          <div><p className="font-semibold text-sm">{t.home.tasks}</p><p className="text-xs text-gray-500">{t.home.campaigns}</p></div>
         </Link>
         <Link href="/profile" className="card flex items-center gap-3 active:scale-95 transition-transform">
           <span className="text-2xl">👤</span>
-          <div><p className="font-semibold text-sm">Profile</p><p className="text-xs text-gray-500">Edit details</p></div>
+          <div><p className="font-semibold text-sm">{t.home.profile}</p><p className="text-xs text-gray-500">{t.home.editDetails}</p></div>
         </Link>
       </div>
 
@@ -121,7 +126,7 @@ export default function HomePage() {
           <p className="text-sm font-semibold text-party-red">Pakistan Awaam Raaj Tehreek</p>
         </div>
         <p className="text-xs text-gray-600 mt-1">
-          {member?.constituency ? `${member.constituency.code} — ${member.constituency.name}` : "Constituency not assigned"}
+          {member?.constituency ? `${member.constituency.code} — ${member.constituency.name}` : t.home.constituencyNotAssigned}
         </p>
       </div>
     </div>
