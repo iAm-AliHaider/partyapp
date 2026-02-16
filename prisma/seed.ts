@@ -161,7 +161,7 @@ async function main() {
       cnic: "0000000000000",
       passwordHash: adminPassword,
       role: "ADMIN",
-      status: "APPROVED",
+      status: "ACTIVE",
       isVerified: true,
       referralCode: "ADMIN-001",
       membershipNumber: "AR-000001",
