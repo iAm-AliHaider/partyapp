@@ -24,7 +24,7 @@ const DOC_CATEGORIES = [
 const STATUS_ICONS: Record<string, string> = { TODO: "⬜", IN_PROGRESS: "🔄", REVIEW: "👀", DONE: "✅", CANCELLED: "❌" };
 const ASSIGN_STATUS_ICONS: Record<string, string> = { ASSIGNED: "📌", ACCEPTED: "👍", IN_PROGRESS: "🔄", SUBMITTED: "📤", VERIFIED: "✅", REJECTED: "❌" };
 
-function downloadDataUrl(dataUrl, filename) {
+function downloadDataUrl(dataUrl: string, filename: string) {
   const link = document.createElement("a");
   link.href = dataUrl;
   link.download = filename;
