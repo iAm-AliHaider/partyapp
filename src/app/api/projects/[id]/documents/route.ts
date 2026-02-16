@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireSession, requireAdmin } from "@/lib/session";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { requireSession } from "@/lib/session";
 import { randomUUID } from "crypto";
 
-// GET /api/projects/:id/documents — list documents for a project
+// GET /api/projects/:id/documents
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await requireSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ documents });
 }
 
-// POST /api/projects/:id/documents — upload document
+// POST /api/projects/:id/documents — upload document (stores as base64 data URL)
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await requireSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -34,7 +32,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { id: projectId } = params;
   const memberId = (session.user as any).id;
 
-  // Verify project exists
   const project = await prisma.project.findUnique({ where: { id: projectId } });
   if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
@@ -45,21 +42,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
-  // Validate file size (10MB max)
-  if (file.size > 10 * 1024 * 1024) {
-    return NextResponse.json({ error: "File too large (max 10MB)" }, { status: 400 });
+  // 5MB max for DB storage
+  if (file.size > 5 * 1024 * 1024) {
+    return NextResponse.json({ error: "File too large (max 5MB)" }, { status: 400 });
   }
 
-  // Save file
+  // Convert to base64 data URL for DB storage (works on Vercel - no filesystem needed)
+  const bytes = await file.arrayBuffer();
+  const base64 = Buffer.from(bytes).toString("base64");
+  const dataUrl = `data:${file.type};base64,${base64}`;
+
   const ext = file.name.split(".").pop() || "bin";
   const filename = `${randomUUID()}.${ext}`;
-  const uploadDir = join(process.cwd(), "public", "uploads", "documents", projectId);
-  await mkdir(uploadDir, { recursive: true });
-  const filePath = join(uploadDir, filename);
-  const bytes = await file.arrayBuffer();
-  await writeFile(filePath, Buffer.from(bytes));
-
-  const url = `/uploads/documents/${projectId}/${filename}`;
 
   const doc = await prisma.document.create({
     data: {
@@ -71,11 +65,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       size: file.size,
       category: category as any,
       description,
-      url,
+      url: dataUrl,
     },
     include: { uploadedBy: { select: { name: true } } },
   });
 
   return NextResponse.json(doc, { status: 201 });
 }
-
