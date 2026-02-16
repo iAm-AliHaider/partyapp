@@ -1,38 +1,38 @@
-﻿{
-    "name":  "partyapp",
-    "version":  "0.1.0",
-    "private":  true,
-    "scripts":  {
-                    "dev":  "next dev",
-                    "build":  "prisma generate \u0026\u0026 next build",
-                    "start":  "next start",
-                    "lint":  "next lint",
-                    "db:generate":  "prisma generate",
-                    "db:push":  "prisma db push",
-                    "db:seed":  "tsx prisma/seed.ts",
-                    "db:studio":  "prisma studio"
-                },
-    "dependencies":  {
-                         "@prisma/client":  "^6.5.0",
-                         "bcryptjs":  "^2.4.3",
-                         "next":  "14.2.21",
-                         "next-auth":  "^4.24.11",
-                         "next-pwa":  "^5.6.0",
-                         "qrcode.react":  "^4.2.0",
-                         "react":  "^18.3.1",
-                         "react-dom":  "^18.3.1",
-                         "zod":  "^3.24.2"
-                     },
-    "devDependencies":  {
-                            "@types/bcryptjs":  "^2.4.6",
-                            "@types/node":  "^22.13.0",
-                            "@types/react":  "^18.3.18",
-                            "@types/react-dom":  "^18.3.5",
-                            "autoprefixer":  "^10.4.20",
-                            "postcss":  "^8.5.1",
-                            "prisma":  "^6.5.0",
-                            "tailwindcss":  "^3.4.17",
-                            "tsx":  "^4.19.2",
-                            "typescript":  "^5.7.3"
-                        }
+{
+  "name": "partyapp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0",
+    "bcryptjs": "^2.4.3",
+    "next": "14.2.21",
+    "next-auth": "^4.24.11",
+    "next-pwa": "^5.6.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.13.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.1",
+    "prisma": "^6.5.0",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
 }
