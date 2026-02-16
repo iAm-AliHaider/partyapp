@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 /**
- * Webhook endpoint for Siyasat AI Agent
+ * Webhook endpoint for Siyasat AI Agent / OpenClaw
  * Actions: summary, top-recruiters, constituency-coverage, member-lookup,
- *          constituency-detail, recent-members, search-member, growth-stats
+ *          constituency-detail, recent-members, search-member, growth-stats,
+ *          pending-announcements, announcement-detail, mark-sent
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
       }
 
       case "constituency-coverage": {
-        const type = searchParams.get("type"); // NA, PP, PS, PK, PB
+        const type = searchParams.get("type");
         const where: any = {};
         if (type) where.type = type;
 
@@ -182,14 +183,133 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ growth: results, totalDays: days });
       }
 
+      // ═══════ ANNOUNCEMENT ACTIONS ═══════
+
+      case "pending-announcements": {
+        const announcements = await prisma.announcement.findMany({
+          where: { status: { in: ["DRAFT", "SENDING"] } },
+          include: {
+            logs: {
+              where: { status: "pending" },
+              select: { id: true, memberId: true, phone: true },
+            },
+            _count: { select: { logs: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+        return NextResponse.json({
+          announcements: announcements.map(a => ({
+            id: a.id,
+            title: a.title,
+            titleUrdu: a.titleUrdu,
+            message: a.message,
+            messageUrdu: a.messageUrdu,
+            targetType: a.targetType,
+            status: a.status,
+            totalTarget: a.totalTarget,
+            pendingCount: a.logs.length,
+            recipients: a.logs.map(l => ({ logId: l.id, memberId: l.memberId, phone: l.phone })),
+            createdAt: a.createdAt,
+          })),
+        });
+      }
+
+      case "announcement-detail": {
+        const annId = searchParams.get("id");
+        if (!annId) return NextResponse.json({ error: "id parameter required" }, { status: 400 });
+
+        const announcement = await prisma.announcement.findUnique({
+          where: { id: annId },
+          include: {
+            logs: {
+              select: { id: true, memberId: true, phone: true, status: true },
+              orderBy: { createdAt: "asc" },
+            },
+          },
+        });
+
+        if (!announcement) return NextResponse.json({ error: "Announcement not found" }, { status: 404 });
+
+        return NextResponse.json({
+          id: announcement.id,
+          title: announcement.title,
+          titleUrdu: announcement.titleUrdu,
+          message: announcement.message,
+          messageUrdu: announcement.messageUrdu,
+          status: announcement.status,
+          totalTarget: announcement.totalTarget,
+          sentCount: announcement.sentCount,
+          failedCount: announcement.failedCount,
+          recipients: announcement.logs.map(l => ({
+            logId: l.id,
+            phone: l.phone,
+            status: l.status,
+          })),
+        });
+      }
+
       default:
         return NextResponse.json({
           error: "Unknown action",
-          availableActions: ["summary", "top-recruiters", "constituency-coverage", "constituency-detail", "member-lookup", "search-member", "recent-members", "growth-stats"],
+          availableActions: [
+            "summary", "top-recruiters", "constituency-coverage", "constituency-detail",
+            "member-lookup", "search-member", "recent-members", "growth-stats",
+            "pending-announcements", "announcement-detail",
+          ],
         }, { status: 400 });
     }
   } catch (error) {
     console.error("Webhook error:", error);
     return NextResponse.json({ error: "Webhook error" }, { status: 500 });
   }
+}
+
+// POST webhook — for marking announcement logs as sent
+export async function POST(req: NextRequest) {
+  const apiKey = req.headers.get("x-api-key");
+  if (apiKey !== process.env.WEBHOOK_API_KEY) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json();
+  const { action } = body;
+
+  if (action === "mark-sent") {
+    const { announcementId, logId, status: logStatus, error: logError } = body;
+
+    if (logId) {
+      // Mark single log
+      await prisma.announcementLog.update({
+        where: { id: logId },
+        data: {
+          status: logStatus || "sent",
+          error: logError,
+          sentAt: logStatus === "sent" ? new Date() : undefined,
+        },
+      });
+    }
+
+    if (announcementId) {
+      // Recount and update announcement totals
+      const [sentCount, failedCount, pendingCount] = await Promise.all([
+        prisma.announcementLog.count({ where: { announcementId, status: "sent" } }),
+        prisma.announcementLog.count({ where: { announcementId, status: "failed" } }),
+        prisma.announcementLog.count({ where: { announcementId, status: "pending" } }),
+      ]);
+
+      const newStatus = pendingCount === 0 ? (failedCount > 0 && sentCount === 0 ? "FAILED" : "SENT") : "SENDING";
+
+      await prisma.announcement.update({
+        where: { id: announcementId },
+        data: { sentCount, failedCount, status: newStatus, sentAt: newStatus === "SENT" ? new Date() : undefined },
+      });
+
+      return NextResponse.json({ sentCount, failedCount, pendingCount, status: newStatus });
+    }
+
+    return NextResponse.json({ success: true });
+  }
+
+  return NextResponse.json({ error: "Unknown action" }, { status: 400 });
 }
