@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  name               String
+  email              String    @unique
+  phone              String?
+  password_hash      String
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+  is_verified        Boolean   @default(false)
+  is_active          Boolean   @default(true)
+  role               String    @default("member")
+  
+  // Membership relationship
+  memberships        Membership[]
+  
+  // Referral relationships
+  referrals_as_referrer Referral[] @relation("Referrer")
+  referrals_as_referee  Referral[] @relation("Referee")
+  
+  // Anti-fraud tracking
+  user_ips           UserIP[]
+  user_devices       UserDevice[]
+}
+
+model Constituency {
+  id              String    @id @default(cuid())
+  name            String
+  type            String // "NA" or "PA"
+  province        String
+  coordinates     Json?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  
+  // Membership relationship
+  memberships     Membership[]
+  
+  // Leaderboard tracking
+  leaderboard     Leaderboard[]
+}
+
+model Membership {
+  id              String    @id @default(cuid())
+  user_id         String
+  constituency_id String
+  joined_date     DateTime  @default(now())
+  membership_status String   @default("active")
+  
+  // Relationships
+  user            User      @relation(fields: [user_id], references: [id])
+  constituency    Constituency @relation(fields: [constituency_id], references: [id])
+}
+
+model Referral {
+  id                String    @id @default(cuid())
+  referrer_id       String
+  referee_id        String
+  referral_date     DateTime  @default(now())
+  status            String    @default("active")
+  points            Int       @default(0)
+  
+  // Relationships
+  referrer          User      @relation("Referrer", fields: [referrer_id], references: [id])
+  referee           User      @relation("Referee", fields: [referee_id], references: [id])
+  
+  // For 3-level referral tracking
+  level             Int       @default(1)
+  
+  // Track the referral chain
+  parent_referral   Referral? @relation("ChildReferral", fields: [parent_referral_id], references: [id])
+  child_referrals   Referral[] @relation("ChildReferral")
+  parent_referral_id String?
+}
+
+model Leaderboard {
+  id              String    @id @default(cuid())
+  constituency_id String
+  user_id         String
+  points          Int       @default(0)
+  rank            Int
+  updated_at      DateTime  @default(now())
+  
+  // Relationships
+  constituency    Constituency @relation(fields: [constituency_id], references: [id])
+  user            User @relation(fields: [user_id], references: [id])
+}
+
+model UserIP {
+  id           String    @id @default(cuid())
+  user_id      String
+  ip_address   String
+  created_at   DateTime  @default(now())
+  
+  // Relationships
+  user         User @relation(fields: [user_id], references: [id])
+}
+
+model UserDevice {
+  id           String    @id @default(cuid())
+  user_id      String
+  device_fingerprint String
+  created_at   DateTime  @default(now())
+  
+  // Relationships
+  user         User @relation(fields: [user_id], references: [id])
+}
+
+model FraudDetection {
+  id           String    @id @default(cuid())
+  user_id      String
+  ip_address   String?
+  device_fingerprint String?
+  suspicious_activity String
+  detected_at  DateTime  @default(now())
+  
+  // Relationships
+  user         User @relation(fields: [user_id], references: [id])
+}
+
+model MembershipCard {
+  id           String    @id @default(cuid())
+  user_id      String
+  card_number  String
+  issued_date  DateTime  @default(now())
+  valid_until  DateTime
+  
+  // Relationships
+  user         User @relation(fields: [user_id], references: [id])
+}

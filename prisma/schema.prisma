@@ -1,0 +1,409 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== POLITICAL STRUCTURE ====================
+
+model Party {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  nameUrdu    String?  @map("name_urdu")
+  symbol      String?
+  chairman    String?
+  ecpRegistered Boolean @default(false) @map("ecp_registered")
+  logoUrl     String?  @map("logo_url")
+  primaryColor String  @default("#01411C") @map("primary_color")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  members     Member[]
+
+  @@map("parties")
+}
+
+model Province {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameUrdu  String?  @map("name_urdu")
+  code      String   @unique
+  districts District[]
+
+  @@map("provinces")
+}
+
+model District {
+  id          String   @id @default(cuid())
+  name        String
+  nameUrdu    String?  @map("name_urdu")
+  cnicPrefix  String   @map("cnic_prefix")
+  provinceId  String   @map("province_id")
+  province    Province @relation(fields: [provinceId], references: [id])
+  constituencies ConstituencyDistrict[]
+
+  @@unique([name, provinceId])
+  @@map("districts")
+}
+
+model Constituency {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  nameUrdu  String?  @map("name_urdu")
+  type      ConstituencyType
+  totalVoters Int?   @map("total_voters")
+  districts ConstituencyDistrict[]
+  members   Member[]
+  rankings  Ranking[]
+  projectConstituencies ProjectConstituency[]
+
+  @@map("constituencies")
+}
+
+model ConstituencyDistrict {
+  id              String       @id @default(cuid())
+  constituencyId  String       @map("constituency_id")
+  districtId      String       @map("district_id")
+  constituency    Constituency @relation(fields: [constituencyId], references: [id])
+  district        District     @relation(fields: [districtId], references: [id])
+
+  @@unique([constituencyId, districtId])
+  @@map("constituency_districts")
+}
+
+enum ConstituencyType {
+  NA
+  PP
+  PS
+  PK
+  PB
+}
+
+// ==================== MEMBERS ====================
+
+model Member {
+  id              String   @id @default(cuid())
+  name            String
+  nameUrdu        String?  @map("name_urdu")
+  email           String?  @unique
+  phone           String   @unique
+  passwordHash    String   @map("password_hash")
+  cnic            String   @unique
+  age             Int?
+  gender          Gender?
+  religion        String?
+  photoUrl        String?  @map("photo_url")
+  residentialStatus ResidentialStatus @default(RESIDENT) @map("residential_status")
+  country         String   @default("Pakistan")
+
+  partyId         String   @map("party_id")
+  party           Party    @relation(fields: [partyId], references: [id])
+  constituencyId  String?  @map("constituency_id")
+  constituency    Constituency? @relation(fields: [constituencyId], references: [id])
+
+  referralCode    String   @unique @map("referral_code")
+  referredById    String?  @map("referred_by_id")
+  referredBy      Member?  @relation("MemberReferrals", fields: [referredById], references: [id])
+  referrals       Member[] @relation("MemberReferrals")
+
+  role            MemberRole @default(MEMBER)
+  status          MemberStatus @default(PENDING)
+  isVerified      Boolean  @default(false) @map("is_verified")
+  score           Int      @default(0)
+  rank            Int?
+
+  membershipNumber String? @unique @map("membership_number")
+  cardIssuedAt    DateTime? @map("card_issued_at")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  lastActiveAt    DateTime? @map("last_active_at")
+
+  rankings        Ranking[]
+  referralsSent   Referral[] @relation("ReferralSender")
+  referralsReceived Referral[] @relation("ReferralReceiver")
+  notifications   Notification[]
+  taskAssignments TaskAssignment[]
+  projectsCreated Project[] @relation("ProjectCreator")
+  documents       Document[] @relation("DocumentUploader")
+
+  @@map("members")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+enum ResidentialStatus {
+  RESIDENT
+  OVERSEAS
+}
+
+enum MemberRole {
+  MEMBER
+  ORGANIZER
+  DISTRICT_HEAD
+  PROVINCIAL_HEAD
+  ADMIN
+  OWNER
+}
+
+enum MemberStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+// ==================== REFERRAL SYSTEM ====================
+
+model Referral {
+  id            String   @id @default(cuid())
+  referrerId    String   @map("referrer_id")
+  refereeId     String   @map("referee_id")
+  level         Int      @default(1)
+  points        Int      @default(0)
+  status        ReferralStatus @default(PENDING)
+  verifiedAt    DateTime? @map("verified_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  referrer      Member   @relation("ReferralSender", fields: [referrerId], references: [id])
+  referee       Member   @relation("ReferralReceiver", fields: [refereeId], references: [id])
+
+  @@unique([referrerId, refereeId])
+  @@map("referrals")
+}
+
+enum ReferralStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  FRAUDULENT
+}
+
+// ==================== RANKINGS ====================
+
+model Ranking {
+  id              String   @id @default(cuid())
+  memberId        String   @map("member_id")
+  constituencyId  String   @map("constituency_id")
+  score           Int      @default(0)
+  rank            Int
+  directReferrals Int      @default(0) @map("direct_referrals")
+  level2Referrals Int      @default(0) @map("level2_referrals")
+  level3Referrals Int      @default(0) @map("level3_referrals")
+  activeBonus     Int      @default(0) @map("active_bonus")
+  isCandidate     Boolean  @default(false) @map("is_candidate")
+  overridden      Boolean  @default(false)
+  period          String
+  computedAt      DateTime @default(now()) @map("computed_at")
+
+  member          Member   @relation(fields: [memberId], references: [id])
+  constituency    Constituency @relation(fields: [constituencyId], references: [id])
+
+  @@unique([memberId, constituencyId, period])
+  @@map("rankings")
+}
+
+// ==================== PROJECTS & TASKS ====================
+
+model Project {
+  id          String        @id @default(cuid())
+  title       String
+  titleUrdu   String?       @map("title_urdu")
+  description String?
+  category    ProjectCategory
+  priority    ProjectPriority @default(MEDIUM)
+  status      ProjectStatus   @default(DRAFT)
+  startDate   DateTime?     @map("start_date")
+  endDate     DateTime?     @map("end_date")
+  budget      Float?
+  targetVotes Int?          @map("target_votes")
+  targetMembers Int?        @map("target_members")
+  coverImage  String?       @map("cover_image")
+
+  createdById String        @map("created_by_id")
+  createdBy   Member        @relation("ProjectCreator", fields: [createdById], references: [id])
+
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  tasks       Task[]
+  constituencies ProjectConstituency[]
+  documents   Document[]
+
+  @@map("projects")
+}
+
+model ProjectConstituency {
+  id              String       @id @default(cuid())
+  projectId       String       @map("project_id")
+  constituencyId  String       @map("constituency_id")
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  constituency    Constituency @relation(fields: [constituencyId], references: [id])
+
+  @@unique([projectId, constituencyId])
+  @@map("project_constituencies")
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  projectId   String       @map("project_id")
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  titleUrdu   String?      @map("title_urdu")
+  description String?
+  type        TaskType     @default(GENERAL)
+  priority    ProjectPriority @default(MEDIUM)
+  status      TaskStatus   @default(TODO)
+  dueDate     DateTime?    @map("due_date")
+  points      Int          @default(0)
+  evidence    String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  assignments TaskAssignment[]
+
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  id          String             @id @default(cuid())
+  taskId      String             @map("task_id")
+  task        Task               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  memberId    String             @map("member_id")
+  member      Member             @relation(fields: [memberId], references: [id])
+  status      TaskAssignmentStatus @default(ASSIGNED)
+  note        String?
+  evidence    String?
+  completedAt DateTime?          @map("completed_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  @@unique([taskId, memberId])
+  @@map("task_assignments")
+}
+
+// ==================== DOCUMENTS ====================
+
+model Document {
+  id          String       @id @default(cuid())
+  projectId   String       @map("project_id")
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedById String      @map("uploaded_by_id")
+  uploadedBy  Member       @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  filename    String
+  originalName String      @map("original_name")
+  mimeType    String       @map("mime_type")
+  size        Int          // bytes
+  category    DocCategory  @default(GENERAL)
+  description String?
+  url         String       // file path or URL
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@map("documents")
+}
+
+enum DocCategory {
+  GENERAL
+  REPORT
+  PHOTO
+  VIDEO
+  RECEIPT
+  LETTER
+  PLAN
+  EVIDENCE
+  LEGAL
+  MEDIA
+}
+
+// ==================== ENUMS ====================
+
+enum ProjectCategory {
+  CAMPAIGN
+  PHILANTHROPY
+  VOTER_REG
+  RALLY
+  DOOR_TO_DOOR
+  SOCIAL_MEDIA
+  COMMUNITY
+  FUNDRAISING
+  EDUCATION
+  INFRASTRUCTURE
+  OTHER
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskType {
+  GENERAL
+  VOTER_CONTACT
+  DOOR_KNOCK
+  PHONE_BANK
+  EVENT_ORGANIZE
+  DISTRIBUTE
+  SOCIAL_POST
+  DATA_COLLECTION
+  TRANSPORT
+  MONITORING
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+  CANCELLED
+}
+
+enum TaskAssignmentStatus {
+  ASSIGNED
+  ACCEPTED
+  IN_PROGRESS
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id        String   @id @default(cuid())
+  memberId  String   @map("member_id")
+  title     String
+  body      String
+  type      NotificationType
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  member    Member   @relation(fields: [memberId], references: [id])
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  REFERRAL_NEW
+  REFERRAL_VERIFIED
+  RANK_CHANGE
+  SYSTEM
+  CANDIDATE_SELECTED
+  TASK_ASSIGNED
+  TASK_COMPLETED
+  PROJECT_UPDATE
+}

@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+
+@layer base {
+  :root {
+    --color-party-red: #DC2626;
+    --color-party-gold: #EAB308;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+@layer components {
+  .safe-area-top { padding-top: env(safe-area-inset-top); }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-top-bg {
+    padding-top: env(safe-area-inset-top);
+    margin-top: calc(-1 * env(safe-area-inset-top));
+  }
+
+  .btn-primary {
+    @apply bg-party-red text-white px-6 py-3 rounded-xl font-semibold
+           active:scale-95 transition-transform duration-100
+           hover:bg-party-red-dark disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-party-red text-party-red px-6 py-3 rounded-xl font-semibold
+           active:scale-95 transition-transform duration-100
+           hover:bg-party-red/5;
+  }
+
+  .btn-green {
+    @apply bg-pakistan-green text-white px-6 py-3 rounded-xl font-semibold
+           active:scale-95 transition-transform duration-100
+           hover:bg-pakistan-green-light disabled:opacity-50;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-gray-300 bg-white
+           focus:border-party-red focus:ring-2 focus:ring-party-red/20
+           outline-none transition-all text-sm;
+    min-height: 44px;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl p-4 shadow-sm border border-gray-100;
+  }
+
+  .stat-card {
+    @apply card flex flex-col items-center justify-center text-center p-5;
+  }
+
+  .page-container {
+    @apply max-w-lg mx-auto px-4 pb-24 pt-4;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  .section-title {
+    @apply text-lg font-bold text-gray-900 mb-3;
+  }
+}
+
+/* RTL support for Urdu */
+[dir="rtl"] {
+  font-family: "Noto Nastaliq Urdu", serif;
+}
+
+.skeleton {
+  @apply bg-gray-200 rounded-lg animate-pulse;
+}
+
+/* iPhone notch header — extends color behind status bar */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .notch-header {
+    padding-top: calc(1rem + env(safe-area-inset-top));
+  }
+}

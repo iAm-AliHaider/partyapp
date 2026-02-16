@@ -1,0 +1,25 @@
+{
+  "name": "Pakistan Awaam Raaj Tehreek — پاکستان عوام راج تحریک",
+  "short_name": "عوام راج",
+  "description": "Join Pakistan Awaam Raaj Tehreek. Become a member, recruit others, rise through the ranks. عوام کی طاقت، عوام کی حکومت",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#DC2626",
+  "theme_color": "#DC2626",
+  "orientation": "portrait",
+  "scope": "/",
+  "id": "/",
+  "icons": [
+    { "src": "/icons/party-logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/party-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-72.png", "sizes": "72x72", "type": "image/png" },
+    { "src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/icons/icon-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "/icons/icon-144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "/icons/icon-152.png", "sizes": "152x152", "type": "image/png" }
+  ],
+  "categories": ["politics", "social"],
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false
+}
