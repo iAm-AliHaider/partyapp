@@ -40,9 +40,8 @@ async function main() {
   }
   console.log(`✅ ${provinces.length} provinces created`);
 
-  // 3. Create Districts (major ones with CNIC prefixes)
+  // 3. Create Districts
   const districts = [
-    // Punjab
     { name: "Lahore", province: "PB", cnicPrefix: "35202" },
     { name: "Rawalpindi", province: "PB", cnicPrefix: "35101" },
     { name: "Faisalabad", province: "PB", cnicPrefix: "35401" },
@@ -51,25 +50,19 @@ async function main() {
     { name: "Sialkot", province: "PB", cnicPrefix: "36201" },
     { name: "Sargodha", province: "PB", cnicPrefix: "36301" },
     { name: "Bahawalpur", province: "PB", cnicPrefix: "36401" },
-    // Sindh
     { name: "Karachi South", province: "SD", cnicPrefix: "42101" },
     { name: "Karachi East", province: "SD", cnicPrefix: "42201" },
     { name: "Karachi Central", province: "SD", cnicPrefix: "42301" },
     { name: "Karachi West", province: "SD", cnicPrefix: "42401" },
     { name: "Hyderabad", province: "SD", cnicPrefix: "41101" },
     { name: "Sukkur", province: "SD", cnicPrefix: "41201" },
-    // KPK
     { name: "Peshawar", province: "KP", cnicPrefix: "17101" },
     { name: "Mardan", province: "KP", cnicPrefix: "17201" },
     { name: "Abbottabad", province: "KP", cnicPrefix: "17301" },
     { name: "Swat", province: "KP", cnicPrefix: "17401" },
-    // Balochistan
     { name: "Quetta", province: "BA", cnicPrefix: "54101" },
-    // ICT
     { name: "Islamabad", province: "ICT", cnicPrefix: "61101" },
-    // AJK
     { name: "Muzaffarabad", province: "AJK", cnicPrefix: "82101" },
-    // GB
     { name: "Gilgit", province: "GB", cnicPrefix: "71101" },
   ];
 
@@ -85,9 +78,53 @@ async function main() {
   }
   console.log(`✅ ${districts.length} districts created`);
 
+  // 3.5 Create Tehsils (major tehsils per district)
+  const tehsilData: { district: string; province: string; tehsils: string[] }[] = [
+    { district: "Lahore", province: "PB", tehsils: ["Lahore City", "Lahore Cantt", "Shalimar", "Model Town", "Raiwind"] },
+    { district: "Rawalpindi", province: "PB", tehsils: ["Rawalpindi", "Gujar Khan", "Taxila", "Kahuta", "Murree", "Kotli Sattian"] },
+    { district: "Faisalabad", province: "PB", tehsils: ["Faisalabad City", "Faisalabad Sadar", "Jaranwala", "Tandlianwala", "Samundri", "Chak Jhumra"] },
+    { district: "Multan", province: "PB", tehsils: ["Multan City", "Multan Sadar", "Shujabad", "Jalalpur Pirwala"] },
+    { district: "Gujranwala", province: "PB", tehsils: ["Gujranwala City", "Gujranwala Sadar", "Kamoke", "Nowshera Virkan", "Wazirabad"] },
+    { district: "Sialkot", province: "PB", tehsils: ["Sialkot", "Daska", "Pasrur", "Sambrial"] },
+    { district: "Sargodha", province: "PB", tehsils: ["Sargodha", "Bhalwal", "Shahpur", "Sillanwali"] },
+    { district: "Bahawalpur", province: "PB", tehsils: ["Bahawalpur City", "Bahawalpur Sadar", "Hasilpur", "Khairpur Tamewali", "Yazman", "Ahmadpur East"] },
+    { district: "Karachi South", province: "SD", tehsils: ["Saddar", "Lyari", "Clifton"] },
+    { district: "Karachi East", province: "SD", tehsils: ["Jamshed Town", "Gulshan-e-Iqbal", "Gulistan-e-Jauhar"] },
+    { district: "Karachi Central", province: "SD", tehsils: ["North Nazimabad", "Liaquatabad", "New Karachi"] },
+    { district: "Karachi West", province: "SD", tehsils: ["Orangi", "SITE", "Baldia"] },
+    { district: "Hyderabad", province: "SD", tehsils: ["Hyderabad City", "Hyderabad Rural", "Latifabad", "Qasimabad"] },
+    { district: "Sukkur", province: "SD", tehsils: ["Sukkur", "Rohri", "Saleh Pat", "Pano Aqil"] },
+    { district: "Peshawar", province: "KP", tehsils: ["Peshawar City", "Peshawar Rural", "Badaber"] },
+    { district: "Mardan", province: "KP", tehsils: ["Mardan", "Takht Bhai", "Katlang"] },
+    { district: "Abbottabad", province: "KP", tehsils: ["Abbottabad", "Havelian", "Lora"] },
+    { district: "Swat", province: "KP", tehsils: ["Mingora", "Matta", "Babuzai", "Kabal", "Bahrain"] },
+    { district: "Quetta", province: "BA", tehsils: ["Quetta City", "Quetta Sadar"] },
+    { district: "Islamabad", province: "ICT", tehsils: ["Islamabad Urban", "Islamabad Rural", "Tarnol", "Nilore"] },
+    { district: "Muzaffarabad", province: "AJK", tehsils: ["Muzaffarabad", "Pattika", "Hattian Bala"] },
+    { district: "Gilgit", province: "GB", tehsils: ["Gilgit", "Danyore", "Juglot"] },
+  ];
+
+  let tehsilCount = 0;
+  for (const td of tehsilData) {
+    const province = await prisma.province.findUnique({ where: { code: td.province } });
+    if (!province) continue;
+    const district = await prisma.district.findUnique({
+      where: { name_provinceId: { name: td.district, provinceId: province.id } },
+    });
+    if (!district) continue;
+    for (const name of td.tehsils) {
+      await prisma.tehsil.upsert({
+        where: { name_districtId: { name, districtId: district.id } },
+        update: {},
+        create: { name, districtId: district.id },
+      });
+      tehsilCount++;
+    }
+  }
+  console.log(`✅ ${tehsilCount} tehsils created`);
+
   // 4. Create NA Constituencies (1-266 general seats)
   const naConstituencies: { code: string; name: string }[] = [
-    // KPK (NA-1 to NA-45)
     { code: "NA-1", name: "Chitral" }, { code: "NA-2", name: "Dir Upper" },
     { code: "NA-3", name: "Dir Lower" }, { code: "NA-4", name: "Swat-I" },
     { code: "NA-5", name: "Swat-II" }, { code: "NA-6", name: "Shangla" },
@@ -111,24 +148,11 @@ async function main() {
     { code: "NA-40", name: "Mansehra-I" }, { code: "NA-41", name: "Mansehra-II" },
     { code: "NA-42", name: "Battagram" }, { code: "NA-43", name: "Torghar-Kohistan" },
     { code: "NA-44", name: "Upper Kohistan" }, { code: "NA-45", name: "Lower Kohistan" },
-    // ICT (NA-46 to NA-48)
     { code: "NA-46", name: "Islamabad-I" }, { code: "NA-47", name: "Islamabad-II" },
     { code: "NA-48", name: "Islamabad-III" },
-    // Punjab (NA-49 to NA-196)
-    ...Array.from({ length: 148 }, (_, i) => ({
-      code: `NA-${49 + i}`,
-      name: `Punjab-${i + 1}`,
-    })),
-    // Sindh (NA-197 to NA-258)
-    ...Array.from({ length: 62 }, (_, i) => ({
-      code: `NA-${197 + i}`,
-      name: `Sindh-${i + 1}`,
-    })),
-    // Balochistan (NA-259 to NA-266)
-    ...Array.from({ length: 8 }, (_, i) => ({
-      code: `NA-${259 + i}`,
-      name: `Balochistan-${i + 1}`,
-    })),
+    ...Array.from({ length: 148 }, (_, i) => ({ code: `NA-${49 + i}`, name: `Punjab-${i + 1}` })),
+    ...Array.from({ length: 62 }, (_, i) => ({ code: `NA-${197 + i}`, name: `Sindh-${i + 1}` })),
+    ...Array.from({ length: 8 }, (_, i) => ({ code: `NA-${259 + i}`, name: `Balochistan-${i + 1}` })),
   ];
 
   for (const c of naConstituencies) {
@@ -140,7 +164,7 @@ async function main() {
   }
   console.log(`✅ ${naConstituencies.length} NA constituencies created`);
 
-  // 5. Create sample PA constituencies (Punjab PP-1 to PP-20)
+  // 5. Create sample PA constituencies
   for (let i = 1; i <= 20; i++) {
     await prisma.constituency.upsert({
       where: { code: `PP-${i}` },
@@ -152,9 +176,12 @@ async function main() {
 
   // 6. Create Admin Account
   const adminPassword = await bcrypt.hash("admin123", 10);
+  const islamabadProv = await prisma.province.findUnique({ where: { code: "ICT" } });
+  const islamabadDist = islamabadProv ? await prisma.district.findFirst({ where: { name: "Islamabad", provinceId: islamabadProv.id } }) : null;
+
   const admin = await prisma.member.upsert({
     where: { phone: "+923121666056" },
-    update: { role: "ADMIN" },
+    update: { role: "ADMIN", provinceId: islamabadProv?.id, districtId: islamabadDist?.id },
     create: {
       name: "Ali Haider",
       phone: "+923121666056",
@@ -168,6 +195,8 @@ async function main() {
       cardIssuedAt: new Date(),
       partyId: party.id,
       score: 100,
+      provinceId: islamabadProv?.id,
+      districtId: islamabadDist?.id,
     },
   });
   console.log(`✅ Admin account created: ${admin.name} (${admin.phone})`);
