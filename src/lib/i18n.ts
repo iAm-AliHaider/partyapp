@@ -334,7 +334,8 @@ export const translations = {
   },
 } as const;
 
-export type TranslationKeys = typeof translations.en;
+type DeepStringify<T> = { [K in keyof T]: T[K] extends object ? DeepStringify<T[K]> : string; };
+export type TranslationKeys = DeepStringify<typeof translations.en>;
 
 export function t(locale: Locale, path: string): string {
   const keys = path.split(".");
