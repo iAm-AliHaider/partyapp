@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -148,6 +149,28 @@ async function main() {
     });
   }
   console.log("✅ 20 sample PP constituencies created");
+
+  // 6. Create Admin Account
+  const adminPassword = await bcrypt.hash("admin123", 10);
+  const admin = await prisma.member.upsert({
+    where: { phone: "+923121666056" },
+    update: { role: "ADMIN" },
+    create: {
+      name: "Ali Haider",
+      phone: "+923121666056",
+      cnic: "0000000000000",
+      passwordHash: adminPassword,
+      role: "ADMIN",
+      status: "APPROVED",
+      isVerified: true,
+      referralCode: "ADMIN-001",
+      membershipNumber: "AR-000001",
+      cardIssuedAt: new Date(),
+      partyId: party.id,
+      score: 100,
+    },
+  });
+  console.log(`✅ Admin account created: ${admin.name} (${admin.phone})`);
 
   console.log("🎉 Seed complete!");
 }
