@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build member filter based on target
-    const memberWhere: any = { phone: { not: null } };
+    const memberWhere: any = {};
     
     if (targetType === "PROVINCE" && provinceId) {
       memberWhere.provinceId = provinceId;
