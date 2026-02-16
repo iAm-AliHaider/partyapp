@@ -7,6 +7,7 @@ const adminTabs = [
   { href: "/admin", label: "Dashboard", icon: "📊" },
   { href: "/admin/members", label: "Members", icon: "👥" },
   { href: "/admin/projects", label: "Projects", icon: "📋" },
+  { href: "/admin/announcements", label: "Announce", icon: "📢" },
   { href: "/admin/constituencies", label: "Areas", icon: "🗺️" },
 ];
 
@@ -15,7 +16,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top nav with safe area for notch */}
       <div className="bg-party-red text-white px-4 pb-3 notch-header">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -27,12 +27,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <Link href="/home" className="text-xs opacity-70 bg-white/10 px-3 py-1 rounded-lg">← App</Link>
         </div>
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5">
           {adminTabs.map((tab) => {
             const isActive = pathname === tab.href || (tab.href !== "/admin" && pathname?.startsWith(tab.href));
             return (
               <Link key={tab.href} href={tab.href}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-colors ${
                   isActive ? "bg-white text-party-red" : "bg-white/20 text-white"
                 }`}>
                 {tab.icon} {tab.label}

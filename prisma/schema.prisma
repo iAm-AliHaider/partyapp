@@ -43,9 +43,33 @@ model District {
   provinceId  String   @map("province_id")
   province    Province @relation(fields: [provinceId], references: [id])
   constituencies ConstituencyDistrict[]
+  tehsils     Tehsil[]
 
   @@unique([name, provinceId])
   @@map("districts")
+}
+
+model Tehsil {
+  id          String   @id @default(cuid())
+  name        String
+  nameUrdu    String?  @map("name_urdu")
+  districtId  String   @map("district_id")
+  district    District @relation(fields: [districtId], references: [id])
+  constituencies TehsilConstituency[]
+
+  @@unique([name, districtId])
+  @@map("tehsils")
+}
+
+model TehsilConstituency {
+  id              String       @id @default(cuid())
+  tehsilId        String       @map("tehsil_id")
+  constituencyId  String       @map("constituency_id")
+  tehsil          Tehsil       @relation(fields: [tehsilId], references: [id])
+  constituency    Constituency @relation(fields: [constituencyId], references: [id])
+
+  @@unique([tehsilId, constituencyId])
+  @@map("tehsil_constituencies")
 }
 
 model Constituency {
@@ -56,6 +80,7 @@ model Constituency {
   type      ConstituencyType
   totalVoters Int?   @map("total_voters")
   districts ConstituencyDistrict[]
+  tehsils   TehsilConstituency[]
   members   Member[]
   rankings  Ranking[]
   projectConstituencies ProjectConstituency[]
@@ -103,6 +128,11 @@ model Member {
   party           Party    @relation(fields: [partyId], references: [id])
   constituencyId  String?  @map("constituency_id")
   constituency    Constituency? @relation(fields: [constituencyId], references: [id])
+
+  // Geographic (derived from constituency or set directly)
+  provinceId      String?  @map("province_id")
+  districtId      String?  @map("district_id")
+  tehsilId        String?  @map("tehsil_id")
 
   referralCode    String   @unique @map("referral_code")
   referredById    String?  @map("referred_by_id")
@@ -299,10 +329,10 @@ model Document {
   filename    String
   originalName String      @map("original_name")
   mimeType    String       @map("mime_type")
-  size        Int          // bytes
+  size        Int
   category    DocCategory  @default(GENERAL)
   description String?
-  url         String       // file path or URL
+  url         String
   createdAt   DateTime     @default(now()) @map("created_at")
 
   @@map("documents")
@@ -319,6 +349,71 @@ enum DocCategory {
   EVIDENCE
   LEGAL
   MEDIA
+}
+
+// ==================== ANNOUNCEMENTS ====================
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  titleUrdu   String?  @map("title_urdu")
+  message     String
+  messageUrdu String?  @map("message_urdu")
+  
+  // Targeting
+  targetType  AnnouncementTarget @default(ALL) @map("target_type")
+  provinceId  String?  @map("province_id")
+  districtId  String?  @map("district_id")
+  tehsilId    String?  @map("tehsil_id")
+  constituencyId String? @map("constituency_id")
+  
+  // Delivery
+  channel     String   @default("whatsapp") // whatsapp, sms, in-app
+  status      AnnouncementStatus @default(DRAFT)
+  sentCount   Int      @default(0) @map("sent_count")
+  failedCount Int      @default(0) @map("failed_count")
+  totalTarget Int      @default(0) @map("total_target")
+  
+  createdById String   @map("created_by_id")
+  sentAt      DateTime? @map("sent_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  logs        AnnouncementLog[]
+
+  @@map("announcements")
+}
+
+model AnnouncementLog {
+  id             String   @id @default(cuid())
+  announcementId String   @map("announcement_id")
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  memberId       String   @map("member_id")
+  phone          String
+  status         String   @default("pending") // pending, sent, failed
+  error          String?
+  sentAt         DateTime? @map("sent_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([announcementId, memberId])
+  @@map("announcement_logs")
+}
+
+enum AnnouncementTarget {
+  ALL
+  PROVINCE
+  DISTRICT
+  TEHSIL
+  CONSTITUENCY
+  INDIVIDUAL
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  SENDING
+  SENT
+  FAILED
+  CANCELLED
 }
 
 // ==================== ENUMS ====================
@@ -406,4 +501,5 @@ enum NotificationType {
   TASK_ASSIGNED
   TASK_COMPLETED
   PROJECT_UPDATE
+  ANNOUNCEMENT
 }
