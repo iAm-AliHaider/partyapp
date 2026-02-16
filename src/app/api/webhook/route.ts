@@ -185,6 +185,14 @@ export async function GET(req: NextRequest) {
 
       // ═══════ ANNOUNCEMENT ACTIONS ═══════
 
+      case "list-all-announcements": {
+        const allAnn = await prisma.announcement.findMany({
+          orderBy: { createdAt: "desc" },
+          select: { id: true, title: true, status: true, totalTarget: true, sentCount: true, failedCount: true, createdAt: true },
+        });
+        return NextResponse.json({ announcements: allAnn });
+      }
+
       case "pending-announcements": {
         const announcements = await prisma.announcement.findMany({
           where: { status: { in: ["DRAFT", "SENDING"] } },
