@@ -24,6 +24,15 @@ const DOC_CATEGORIES = [
 const STATUS_ICONS: Record<string, string> = { TODO: "⬜", IN_PROGRESS: "🔄", REVIEW: "👀", DONE: "✅", CANCELLED: "❌" };
 const ASSIGN_STATUS_ICONS: Record<string, string> = { ASSIGNED: "📌", ACCEPTED: "👍", IN_PROGRESS: "🔄", SUBMITTED: "📤", VERIFIED: "✅", REJECTED: "❌" };
 
+function downloadDataUrl(dataUrl, filename) {
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 function formatSize(bytes: number) {
   if (bytes < 1024) return bytes + " B";
   if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
@@ -370,6 +379,7 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
                     </div>
                     <div className="flex flex-col gap-1">
                       <a href={doc.url} target="_blank" className="text-[9px] bg-blue-50 text-blue-500 px-2 py-1 rounded font-semibold text-center">View</a>
+                      <button onClick={() => downloadDataUrl(doc.url, doc.originalName)} className="text-[9px] bg-green-50 text-green-500 px-2 py-1 rounded font-semibold">DL</button>
                       <button onClick={() => deleteDocument(doc.id)} className="text-[9px] bg-red-50 text-red-400 px-2 py-1 rounded font-semibold">Del</button>
                     </div>
                   </div>
