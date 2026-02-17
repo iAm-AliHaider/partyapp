@@ -75,8 +75,7 @@ export default function AdminProjects() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-title tracking-tight">Projects</h1>
+      <div className="flex justify-end">
         <button onClick={() => setShowCreate(true)} className="btn-primary !py-2 !px-4 text-subhead flex items-center gap-1.5">
           <Plus size={15} /> New
         </button>

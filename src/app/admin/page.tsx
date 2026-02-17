@@ -132,9 +132,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-title tracking-tight">Analytics</h1>
+      {/* Refresh */}
+      <div className="flex justify-end">
         <button onClick={() => { setLoading(true); fetch("/api/analytics").then(r => r.json()).then(d => { setData(d); setLoading(false); }); }}
           className="w-9 h-9 rounded-full bg-surface-tertiary flex items-center justify-center tap-scale">
           <RefreshCw size={16} className="text-label-secondary" />

@@ -121,8 +121,6 @@ export default function AnnouncementsPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-title tracking-tight">Announcements</h1>
-
       {/* Tabs */}
       <div className="flex gap-2 bg-surface-tertiary p-1 rounded-apple-lg">
         {(["create", "history"] as const).map(key => (
