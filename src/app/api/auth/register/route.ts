@@ -8,15 +8,15 @@ import { notifyNewMember } from "@/lib/notify";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, phone, password, cnic, age, gender, religion, email, residentialStatus, country, referralCode, constituencyId } = body;
+    const { name, phone, password, cnic, age, gender, religion, email, residentialStatus, country, referralCode, provinceId, districtId, tehsilId } = body;
 
     // Validate required fields
     if (!name || !phone || !password || !cnic) {
       return NextResponse.json({ error: "Name, phone, password, and CNIC are required" }, { status: 400 });
     }
 
-    if (!constituencyId) {
-      return NextResponse.json({ error: "Please select your constituency" }, { status: 400 });
+    if (!districtId) {
+      return NextResponse.json({ error: "Please select your district" }, { status: 400 });
     }
 
     // Validate CNIC
@@ -33,10 +33,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Phone or CNIC already registered" }, { status: 409 });
     }
 
-    // Verify constituency exists
-    const constituency = await prisma.constituency.findUnique({ where: { id: constituencyId } });
-    if (!constituency) {
-      return NextResponse.json({ error: "Invalid constituency selected" }, { status: 400 });
+    // Verify district exists and get province
+    const district = await prisma.district.findUnique({ where: { id: districtId }, include: { province: true } });
+    if (!district) {
+      return NextResponse.json({ error: "Invalid district selected" }, { status: 400 });
+    }
+
+    // Verify tehsil if provided
+    if (tehsilId) {
+      const tehsil = await prisma.tehsil.findUnique({ where: { id: tehsilId } });
+      if (!tehsil || tehsil.districtId !== districtId) {
+        return NextResponse.json({ error: "Invalid tehsil selected" }, { status: 400 });
+      }
     }
 
     // Get or create default party
@@ -80,7 +88,9 @@ export async function POST(req: NextRequest) {
         residentialStatus: residentialStatus || "RESIDENT",
         country: country || "Pakistan",
         partyId: party.id,
-        constituencyId,
+        provinceId: district.provinceId,
+        districtId,
+        tehsilId: tehsilId || null,
         referralCode: newReferralCode,
         referredById,
         membershipNumber,
@@ -94,21 +104,21 @@ export async function POST(req: NextRequest) {
       await processReferral(referredById, member.id);
     }
 
-    // Notify Boss via WhatsApp (fire-and-forget, don't block registration)
+    // Notify Boss via WhatsApp
     notifyNewMember({
       name,
       phone,
       membershipNumber,
-      constituencyCode: constituency.code,
-      constituencyName: constituency.name,
+      districtName: district.name,
+      provinceName: district.province.name,
       referredBy: referrerName,
-    }).catch(() => {}); // silent fail — notification shouldn't break registration
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
       membershipNumber,
       referralCode: newReferralCode,
-      constituency: constituency.code,
+      district: district.name,
     }, { status: 201 });
   } catch (error: any) {
     console.error("Registration error:", error);

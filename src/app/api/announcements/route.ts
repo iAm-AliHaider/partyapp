@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { title, titleUrdu, message, messageUrdu, targetType, provinceId, districtId, tehsilId, constituencyId, memberIds } = body;
+    const { title, titleUrdu, message, messageUrdu, targetType, provinceId, districtId, tehsilId, memberIds } = body;
 
     if (!title || !message) {
       return NextResponse.json({ error: "Title and message are required" }, { status: 400 });
@@ -37,8 +37,6 @@ export async function POST(req: NextRequest) {
       memberWhere.districtId = districtId;
     } else if (targetType === "TEHSIL" && tehsilId) {
       memberWhere.tehsilId = tehsilId;
-    } else if (targetType === "CONSTITUENCY" && constituencyId) {
-      memberWhere.constituencyId = constituencyId;
     } else if (targetType === "INDIVIDUAL" && memberIds?.length) {
       memberWhere.id = { in: memberIds };
     }
@@ -59,7 +57,6 @@ export async function POST(req: NextRequest) {
         provinceId: provinceId || null,
         districtId: districtId || null,
         tehsilId: tehsilId || null,
-        constituencyId: constituencyId || null,
         totalTarget: targetMembers.length,
         createdById: (session.user as any).id,
         logs: {

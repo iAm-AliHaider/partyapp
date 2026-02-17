@@ -3,8 +3,8 @@ import prisma from "@/lib/prisma";
 
 /**
  * Webhook endpoint for Siyasat AI Agent / OpenClaw
- * Actions: summary, top-recruiters, constituency-coverage, member-lookup,
- *          constituency-detail, recent-members, search-member, growth-stats,
+ * Actions: summary, top-recruiters, district-coverage, member-lookup,
+ *          district-detail, recent-members, search-member, growth-stats,
  *          pending-announcements, announcement-detail, mark-sent
  */
 export async function GET(req: NextRequest) {
@@ -23,21 +23,21 @@ export async function GET(req: NextRequest) {
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-        const [totalMembers, activeMembers, pendingMembers, totalReferrals, newToday, newThisWeek, constituenciesCovered, totalConstituencies] = await Promise.all([
+        const [totalMembers, activeMembers, pendingMembers, totalReferrals, newToday, newThisWeek, districtsCovered, totalDistricts] = await Promise.all([
           prisma.member.count(),
           prisma.member.count({ where: { status: "ACTIVE" } }),
           prisma.member.count({ where: { status: "PENDING" } }),
           prisma.referral.count({ where: { status: "VERIFIED" } }),
           prisma.member.count({ where: { createdAt: { gte: today } } }),
           prisma.member.count({ where: { createdAt: { gte: weekAgo } } }),
-          prisma.member.groupBy({ by: ["constituencyId"], where: { constituencyId: { not: null }, status: "ACTIVE" }, _count: true }).then(r => r.length),
-          prisma.constituency.count(),
+          prisma.member.groupBy({ by: ["districtId"], where: { districtId: { not: null }, status: "ACTIVE" }, _count: true }).then(r => r.length),
+          prisma.district.count(),
         ]);
 
         return NextResponse.json({
           totalMembers, activeMembers, pendingMembers, totalReferrals,
-          newToday, newThisWeek, constituenciesCovered, totalConstituencies,
-          coveragePercent: totalConstituencies > 0 ? Math.round((constituenciesCovered / totalConstituencies) * 100) : 0,
+          newToday, newThisWeek, districtsCovered, totalDistricts,
+          coveragePercent: totalDistricts > 0 ? Math.round((districtsCovered / totalDistricts) * 100) : 0,
           generatedAt: new Date().toISOString(),
         });
       }
@@ -47,7 +47,8 @@ export async function GET(req: NextRequest) {
         const topRecruiters = await prisma.member.findMany({
           where: { status: "ACTIVE", score: { gt: 0 } },
           select: { name: true, score: true, referralCode: true, membershipNumber: true,
-            constituency: { select: { code: true, name: true } },
+            district: { select: { name: true } },
+            province: { select: { name: true } },
             _count: { select: { referrals: true } },
           },
           orderBy: { score: "desc" },
@@ -56,31 +57,32 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ topRecruiters });
       }
 
-      case "constituency-coverage": {
-        const type = searchParams.get("type");
+      case "district-coverage": {
+        const provinceId = searchParams.get("provinceId");
         const where: any = {};
-        if (type) where.type = type;
+        if (provinceId) where.provinceId = provinceId;
 
-        const coverage = await prisma.constituency.findMany({
+        const districts = await prisma.district.findMany({
           where,
-          select: { code: true, name: true, type: true, _count: { select: { members: true } } },
-          orderBy: { code: "asc" },
+          select: { name: true, province: { select: { name: true } }, _count: { select: { members: true } } },
+          orderBy: { name: "asc" },
         });
 
-        const total = coverage.length;
-        const covered = coverage.filter(c => (c._count as any).members > 0).length;
-        const totalMembers = coverage.reduce((sum, c) => sum + (c._count as any).members, 0);
+        const total = districts.length;
+        const covered = districts.filter(d => (d._count as any).members > 0).length;
+        const totalMembers = districts.reduce((sum, d) => sum + (d._count as any).members, 0);
 
-        return NextResponse.json({ coverage, total, covered, totalMembers, coveragePercent: total > 0 ? Math.round((covered / total) * 100) : 0 });
+        return NextResponse.json({ districts, total, covered, totalMembers, coveragePercent: total > 0 ? Math.round((covered / total) * 100) : 0 });
       }
 
-      case "constituency-detail": {
-        const code = searchParams.get("code");
-        if (!code) return NextResponse.json({ error: "code parameter required" }, { status: 400 });
+      case "district-detail": {
+        const districtName = searchParams.get("name");
+        if (!districtName) return NextResponse.json({ error: "name parameter required" }, { status: 400 });
 
-        const constituency = await prisma.constituency.findFirst({
-          where: { code: { equals: code, mode: "insensitive" } },
+        const district = await prisma.district.findFirst({
+          where: { name: { equals: districtName, mode: "insensitive" } },
           include: {
+            province: { select: { name: true } },
             members: {
               where: { status: "ACTIVE" },
               select: { name: true, score: true, rank: true, membershipNumber: true, createdAt: true },
@@ -91,8 +93,8 @@ export async function GET(req: NextRequest) {
           },
         });
 
-        if (!constituency) return NextResponse.json({ error: "Constituency not found" }, { status: 404 });
-        return NextResponse.json(constituency);
+        if (!district) return NextResponse.json({ error: "District not found" }, { status: 404 });
+        return NextResponse.json(district);
       }
 
       case "member-lookup": {
@@ -114,7 +116,9 @@ export async function GET(req: NextRequest) {
           select: {
             name: true, phone: true, membershipNumber: true, score: true, rank: true,
             status: true, role: true, referralCode: true, createdAt: true,
-            constituency: { select: { code: true, name: true } },
+            district: { select: { name: true } },
+            province: { select: { name: true } },
+            tehsil: { select: { name: true } },
             _count: { select: { referrals: true } },
           },
         });
@@ -137,7 +141,7 @@ export async function GET(req: NextRequest) {
           },
           select: {
             name: true, phone: true, membershipNumber: true, score: true, status: true,
-            constituency: { select: { code: true } },
+            district: { select: { name: true } },
           },
           take: 10,
         });
@@ -153,7 +157,8 @@ export async function GET(req: NextRequest) {
           where: { createdAt: { gte: since } },
           select: {
             name: true, phone: true, membershipNumber: true, status: true, createdAt: true,
-            constituency: { select: { code: true, name: true } },
+            district: { select: { name: true } },
+            province: { select: { name: true } },
             referredBy: { select: { name: true } },
           },
           orderBy: { createdAt: "desc" },
@@ -261,7 +266,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           error: "Unknown action",
           availableActions: [
-            "summary", "top-recruiters", "constituency-coverage", "constituency-detail",
+            "summary", "top-recruiters", "district-coverage", "district-detail",
             "member-lookup", "search-member", "recent-members", "growth-stats",
             "pending-announcements", "announcement-detail",
           ],
@@ -287,7 +292,6 @@ export async function POST(req: NextRequest) {
     const { announcementId, logId, status: logStatus, error: logError } = body;
 
     if (logId) {
-      // Mark single log
       await prisma.announcementLog.update({
         where: { id: logId },
         data: {
@@ -299,7 +303,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (announcementId) {
-      // Recount and update announcement totals
       const [sentCount, failedCount, pendingCount] = await Promise.all([
         prisma.announcementLog.count({ where: { announcementId, status: "sent" } }),
         prisma.announcementLog.count({ where: { announcementId, status: "failed" } }),

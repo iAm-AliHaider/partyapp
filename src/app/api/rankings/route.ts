@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getConstituencyLeaderboard, getNationalLeaderboard } from "@/lib/ranking-calculator";
+import { getDistrictLeaderboard, getNationalLeaderboard } from "@/lib/ranking-calculator";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const constituencyId = searchParams.get("constituencyId");
-  const type = searchParams.get("type") || "constituency";
+  const districtId = searchParams.get("districtId");
+  const type = searchParams.get("type") || "district";
   const limit = parseInt(searchParams.get("limit") || "20");
 
   try {
@@ -13,11 +13,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ leaderboard });
     }
 
-    if (!constituencyId) {
-      return NextResponse.json({ error: "constituencyId required" }, { status: 400 });
+    if (!districtId) {
+      return NextResponse.json({ error: "districtId required" }, { status: 400 });
     }
 
-    const leaderboard = await getConstituencyLeaderboard(constituencyId, limit);
+    const leaderboard = await getDistrictLeaderboard(districtId, limit);
     return NextResponse.json({ leaderboard });
   } catch (error) {
     console.error("Rankings error:", error);

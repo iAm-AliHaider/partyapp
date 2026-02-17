@@ -17,39 +17,56 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Constituency data
-  const [constituencies, setConstituencies] = useState<any[]>([]);
-  const [constType, setConstType] = useState("NA");
-  const [constSearch, setConstSearch] = useState("");
-  const [filteredConst, setFilteredConst] = useState<any[]>([]);
+  // Geographic data
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [tehsils, setTehsils] = useState<any[]>([]);
+  const [districtSearch, setDistrictSearch] = useState("");
 
   const [form, setForm] = useState({
     name: "", phone: "", password: "", cnic: "", age: "",
     gender: "MALE", religion: "Islam", email: "",
     residentialStatus: "RESIDENT", country: "Pakistan",
-    referralCode: refCode, constituencyId: "",
+    referralCode: refCode, provinceId: "", districtId: "", tehsilId: "",
   });
 
+  // Load provinces
   useEffect(() => {
-    fetch("/api/constituencies")
+    fetch("/api/provinces")
       .then((r) => r.json())
-      .then((data) => setConstituencies(data.constituencies || []));
+      .then((data) => setProvinces(data.provinces || []));
   }, []);
 
+  // Load districts when province changes
   useEffect(() => {
-    let result = constituencies.filter((c) => c.type === constType);
-    if (constSearch) {
-      const q = constSearch.toLowerCase();
-      result = result.filter((c) => c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q));
-    }
-    setFilteredConst(result);
-  }, [constType, constSearch, constituencies]);
+    if (!form.provinceId) { setDistricts([]); return; }
+    fetch(`/api/districts?provinceId=${form.provinceId}`)
+      .then((r) => r.json())
+      .then((data) => setDistricts(data.districts || []));
+    setForm(prev => ({ ...prev, districtId: "", tehsilId: "" }));
+    setTehsils([]);
+  }, [form.provinceId]);
+
+  // Load tehsils when district changes
+  useEffect(() => {
+    if (!form.districtId) { setTehsils([]); return; }
+    fetch(`/api/tehsils?districtId=${form.districtId}`)
+      .then((r) => r.json())
+      .then((data) => setTehsils(data.tehsils || []));
+    setForm(prev => ({ ...prev, tehsilId: "" }));
+  }, [form.districtId]);
+
+  const filteredDistricts = districtSearch
+    ? districts.filter(d => d.name.toLowerCase().includes(districtSearch.toLowerCase()))
+    : districts;
 
   const updateField = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const selectedConst = constituencies.find((c) => c.id === form.constituencyId);
+  const selectedProvince = provinces.find(p => p.id === form.provinceId);
+  const selectedDistrict = districts.find(d => d.id === form.districtId);
+  const selectedTehsil = tehsils.find(t => t.id === form.tehsilId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,14 +88,6 @@ function RegisterForm() {
       setLoading(false);
     }
   };
-
-  const TYPES = [
-    { key: "NA", label: "National Assembly" },
-    { key: "PP", label: "Punjab" },
-    { key: "PS", label: "Sindh" },
-    { key: "PK", label: "KPK" },
-    { key: "PB", label: "Balochistan" },
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -135,59 +144,82 @@ function RegisterForm() {
             </>
           )}
 
-          {/* STEP 2: Constituency Selection */}
+          {/* STEP 2: Location Selection (Province > District > Tehsil) */}
           {step === 2 && (
             <>
               <div className="text-center mb-2">
-                <p className="text-sm font-semibold text-gray-800">{t.register.selectConstituency} *</p>
-                <p className="text-xs text-gray-500 mt-1">{t.register.constituencyHelp}</p>
+                <p className="text-sm font-semibold text-gray-800">{t.register.selectLocation || "Select Your Location"} *</p>
+                <p className="text-xs text-gray-500 mt-1">{t.register.locationHelp || "Choose your province, district, and tehsil"}</p>
               </div>
 
-              <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
-                {TYPES.map((tp) => (
-                  <button key={tp.key} type="button" onClick={() => setConstType(tp.key)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                      constType === tp.key ? "bg-party-red text-white" : "bg-gray-100 text-gray-600"
-                    }`}>
-                    {tp.key} <span className="hidden sm:inline">— {tp.label}</span>
-                  </button>
-                ))}
+              {/* Province Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.province || "Province"} *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {provinces.map((p) => (
+                    <button key={p.id} type="button" onClick={() => updateField("provinceId", p.id)}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors text-left ${
+                        form.provinceId === p.id ? "bg-party-red text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}>
+                      {p.name}
+                      {p.nameUrdu && <span className="block text-xs opacity-70 font-urdu">{p.nameUrdu}</span>}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <input value={constSearch} onChange={(e) => setConstSearch(e.target.value)} placeholder={t.register.searchPlaceholder} className="input-field text-sm" />
+              {/* District Selection */}
+              {form.provinceId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.district || "District"} *</label>
+                  <input value={districtSearch} onChange={(e) => setDistrictSearch(e.target.value)} placeholder={t.register.searchDistrict || "Search district..."} className="input-field text-sm mb-2" />
 
-              {selectedConst && (
-                <div className="bg-party-red/5 border-2 border-party-red rounded-xl p-3 flex justify-between items-center">
-                  <div>
-                    <p className="font-bold text-sm text-party-red" dir="ltr">{selectedConst.code}</p>
-                    <p className="text-xs text-gray-600">{selectedConst.name}</p>
+                  {selectedDistrict && (
+                    <div className="bg-party-red/5 border-2 border-party-red rounded-xl p-3 flex justify-between items-center mb-2">
+                      <div>
+                        <p className="font-bold text-sm text-party-red">{selectedDistrict.name}</p>
+                        {selectedDistrict.nameUrdu && <p className="text-xs text-gray-500 font-urdu">{selectedDistrict.nameUrdu}</p>}
+                      </div>
+                      <button type="button" onClick={() => updateField("districtId", "")} className="text-xs text-gray-400">{t.register.clear || "Clear"}</button>
+                    </div>
+                  )}
+
+                  <div className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 divide-y">
+                    {filteredDistricts.length > 0 ? filteredDistricts.map((d) => (
+                      <button key={d.id} type="button" onClick={() => updateField("districtId", d.id)}
+                        className={`w-full text-left px-3 py-2.5 flex justify-between items-center transition-colors ${
+                          form.districtId === d.id ? "bg-party-red/10" : "hover:bg-gray-50"
+                        }`}>
+                        <div>
+                          <p className={`text-sm font-semibold ${form.districtId === d.id ? "text-party-red" : ""}`}>{d.name}</p>
+                          {d._count?.tehsils > 0 && <p className="text-[10px] text-gray-400">{d._count.tehsils} tehsils</p>}
+                        </div>
+                        {form.districtId === d.id && <span className="text-party-red text-lg">✓</span>}
+                      </button>
+                    )) : (
+                      <p className="text-center text-gray-400 text-sm py-6">{t.noResults || "No results"}</p>
+                    )}
                   </div>
-                  <button type="button" onClick={() => updateField("constituencyId", "")} className="text-xs text-gray-400">{t.register.clear}</button>
+                  <p className="text-[10px] text-gray-400 text-center mt-1">{filteredDistricts.length} {t.register.districts || "districts"}</p>
                 </div>
               )}
 
-              <div className="max-h-48 overflow-y-auto rounded-xl border border-gray-200 divide-y">
-                {filteredConst.length > 0 ? filteredConst.map((c) => (
-                  <button key={c.id} type="button" onClick={() => updateField("constituencyId", c.id)}
-                    className={`w-full text-left px-3 py-2.5 flex justify-between items-center transition-colors ${
-                      form.constituencyId === c.id ? "bg-party-red/10" : "hover:bg-gray-50"
-                    }`}>
-                    <div>
-                      <p className={`text-sm font-semibold ${form.constituencyId === c.id ? "text-party-red" : ""}`} dir="ltr">{c.code}</p>
-                      <p className="text-xs text-gray-500">{c.name}</p>
-                    </div>
-                    {form.constituencyId === c.id && <span className="text-party-red text-lg">✓</span>}
-                  </button>
-                )) : (
-                  <p className="text-center text-gray-400 text-sm py-6">{t.noResults}</p>
-                )}
-              </div>
-
-              <p className="text-[10px] text-gray-400 text-center">{filteredConst.length} {t.register.constituencies}</p>
+              {/* Tehsil Selection */}
+              {form.districtId && tehsils.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.tehsil || "Tehsil"}</label>
+                  <select value={form.tehsilId} onChange={(e) => updateField("tehsilId", e.target.value)} className="input-field">
+                    <option value="">{t.register.selectTehsil || "Select tehsil (optional)"}</option>
+                    {tehsils.map((th) => (
+                      <option key={th.id} value={th.id}>{th.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <button type="button" onClick={() => setStep(1)} className="btn-secondary flex-1">{t.back}</button>
-                <button type="button" onClick={() => setStep(3)} className="w-full bg-party-red text-white px-6 py-3 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-50 flex-1" disabled={!form.constituencyId}>{t.register.next}</button>
+                <button type="button" onClick={() => setStep(3)} className="w-full bg-party-red text-white px-6 py-3 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-50 flex-1" disabled={!form.districtId}>{t.register.next}</button>
               </div>
             </>
           )}
@@ -195,10 +227,12 @@ function RegisterForm() {
           {/* STEP 3: Additional Info */}
           {step === 3 && (
             <>
-              {selectedConst && (
+              {selectedDistrict && (
                 <div className="bg-party-red/5 border border-party-red/20 rounded-xl p-3 mb-2">
-                  <p className="text-xs text-gray-500">{t.profile.constituency}</p>
-                  <p className="font-bold text-sm text-party-red" dir="ltr">{selectedConst.code} — {selectedConst.name}</p>
+                  <p className="text-xs text-gray-500">{t.register.location || "Location"}</p>
+                  <p className="font-bold text-sm text-party-red">
+                    {selectedDistrict.name}{selectedTehsil ? ` → ${selectedTehsil.name}` : ""}, {selectedProvince?.name}
+                  </p>
                 </div>
               )}
 

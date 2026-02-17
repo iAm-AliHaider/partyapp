@@ -9,7 +9,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       select: {
         id: true, name: true, score: true, rank: true, referralCode: true,
         membershipNumber: true, status: true, role: true, createdAt: true,
-        constituency: { select: { code: true, name: true } },
+        district: { select: { name: true } },
+        province: { select: { name: true } },
+        tehsil: { select: { name: true } },
       },
     });
 
@@ -65,7 +67,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Soft delete — set to SUSPENDED
     await prisma.member.update({
       where: { id: params.id },
       data: { status: "SUSPENDED" },
@@ -76,4 +77,3 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ error: "Failed to delete member" }, { status: 500 });
   }
 }
-

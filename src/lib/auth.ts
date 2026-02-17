@@ -16,7 +16,7 @@ export const authOptions: NextAuthOptions = {
 
         const member = await prisma.member.findUnique({
           where: { phone: credentials.phone },
-          include: { party: true, constituency: true },
+          include: { party: true, province: true, district: true, tehsil: true },
         });
 
         if (!member) return null;
@@ -37,7 +37,9 @@ export const authOptions: NextAuthOptions = {
           phone: member.phone,
           role: member.role,
           partyId: member.partyId,
-          constituencyId: member.constituencyId,
+          provinceId: member.provinceId,
+          districtId: member.districtId,
+          tehsilId: member.tehsilId,
           referralCode: member.referralCode,
           membershipNumber: member.membershipNumber,
         } as any;
@@ -50,7 +52,9 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as any).role;
         token.partyId = (user as any).partyId;
-        token.constituencyId = (user as any).constituencyId;
+        token.provinceId = (user as any).provinceId;
+        token.districtId = (user as any).districtId;
+        token.tehsilId = (user as any).tehsilId;
         token.referralCode = (user as any).referralCode;
         token.phone = (user as any).phone;
       }
@@ -61,7 +65,9 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
         (session.user as any).partyId = token.partyId;
-        (session.user as any).constituencyId = token.constituencyId;
+        (session.user as any).provinceId = token.provinceId;
+        (session.user as any).districtId = token.districtId;
+        (session.user as any).tehsilId = token.tehsilId;
         (session.user as any).referralCode = token.referralCode;
         (session.user as any).phone = token.phone;
       }

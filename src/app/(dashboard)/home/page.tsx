@@ -45,6 +45,11 @@ export default function HomePage() {
     );
   }
 
+  const locationText = [member?.district?.name, member?.province?.name].filter(Boolean).join(", ");
+  const memberLocation = member?.residentialStatus === "OVERSEAS"
+    ? member.country
+    : [member?.tehsil?.name, member?.district?.name, member?.province?.name].filter(Boolean).join(", ") || undefined;
+
   return (
     <div className="page-container">
       {/* Header */}
@@ -73,7 +78,7 @@ export default function HomePage() {
             rank={member.rank}
             score={member.score}
             joinDate={member.createdAt}
-            location={member.residentialStatus === "OVERSEAS" ? member.country : undefined}
+            location={memberLocation}
           />
         </div>
       )}
@@ -126,7 +131,7 @@ export default function HomePage() {
           <p className="text-sm font-semibold text-party-red">Pakistan Awaam Raaj Tehreek</p>
         </div>
         <p className="text-xs text-gray-600 mt-1">
-          {member?.constituency ? `${member.constituency.code} — ${member.constituency.name}` : t.home.constituencyNotAssigned}
+          {locationText || t.home.locationNotSet}
         </p>
       </div>
     </div>

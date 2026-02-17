@@ -33,7 +33,9 @@ export async function GET() {
         createdAt: true,
         lastActiveAt: true,
         party: { select: { name: true, nameUrdu: true, logoUrl: true } },
-        constituency: { select: { id: true, code: true, name: true, type: true } },
+        province: { select: { id: true, name: true } },
+        district: { select: { id: true, name: true } },
+        tehsil: { select: { id: true, name: true } },
         _count: { select: { referrals: true } },
       },
     });

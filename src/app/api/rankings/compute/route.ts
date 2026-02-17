@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { computeConstituencyRankings } from "@/lib/ranking-calculator";
+import { computeDistrictRankings } from "@/lib/ranking-calculator";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,24 +16,24 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { constituencyId } = body;
+    const { districtId } = body;
 
-    if (constituencyId) {
-      await computeConstituencyRankings(constituencyId);
+    if (districtId) {
+      await computeDistrictRankings(districtId);
       return NextResponse.json({ success: true, computed: 1 });
     }
 
-    // Compute all constituencies with active members
-    const constituencies = await prisma.constituency.findMany({
+    // Compute all districts with active members
+    const districts = await prisma.district.findMany({
       where: { members: { some: { status: "ACTIVE" } } },
       select: { id: true },
     });
 
-    for (const c of constituencies) {
-      await computeConstituencyRankings(c.id);
+    for (const d of districts) {
+      await computeDistrictRankings(d.id);
     }
 
-    return NextResponse.json({ success: true, computed: constituencies.length });
+    return NextResponse.json({ success: true, computed: districts.length });
   } catch (error) {
     console.error("Compute rankings error:", error);
     return NextResponse.json({ error: "Failed to compute rankings" }, { status: 500 });

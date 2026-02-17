@@ -31,6 +31,9 @@ model Province {
   nameUrdu  String?  @map("name_urdu")
   code      String   @unique
   districts District[]
+  members   Member[]
+  rankings  Ranking[]
+  projectProvinces ProjectProvince[]
 
   @@map("provinces")
 }
@@ -44,6 +47,9 @@ model District {
   province    Province @relation(fields: [provinceId], references: [id])
   constituencies ConstituencyDistrict[]
   tehsils     Tehsil[]
+  members     Member[]
+  rankings    Ranking[]
+  projectDistricts ProjectDistrict[]
 
   @@unique([name, provinceId])
   @@map("districts")
@@ -56,6 +62,7 @@ model Tehsil {
   districtId  String   @map("district_id")
   district    District @relation(fields: [districtId], references: [id])
   constituencies TehsilConstituency[]
+  members     Member[]
 
   @@unique([name, districtId])
   @@map("tehsils")
@@ -82,7 +89,6 @@ model Constituency {
   districts ConstituencyDistrict[]
   tehsils   TehsilConstituency[]
   members   Member[]
-  rankings  Ranking[]
   projectConstituencies ProjectConstituency[]
 
   @@map("constituencies")
@@ -126,13 +132,18 @@ model Member {
 
   partyId         String   @map("party_id")
   party           Party    @relation(fields: [partyId], references: [id])
+
+  // Geographic: Province > District > Tehsil
+  provinceId      String?  @map("province_id")
+  province        Province? @relation(fields: [provinceId], references: [id])
+  districtId      String?  @map("district_id")
+  district        District? @relation(fields: [districtId], references: [id])
+  tehsilId        String?  @map("tehsil_id")
+  tehsil          Tehsil?  @relation(fields: [tehsilId], references: [id])
+
+  // Political: Constituency (for rankings & task assignment)
   constituencyId  String?  @map("constituency_id")
   constituency    Constituency? @relation(fields: [constituencyId], references: [id])
-
-  // Geographic (derived from constituency or set directly)
-  provinceId      String?  @map("province_id")
-  districtId      String?  @map("district_id")
-  tehsilId        String?  @map("tehsil_id")
 
   referralCode    String   @unique @map("referral_code")
   referredById    String?  @map("referred_by_id")
@@ -220,7 +231,7 @@ enum ReferralStatus {
 model Ranking {
   id              String   @id @default(cuid())
   memberId        String   @map("member_id")
-  constituencyId  String   @map("constituency_id")
+  districtId      String   @map("district_id")
   score           Int      @default(0)
   rank            Int
   directReferrals Int      @default(0) @map("direct_referrals")
@@ -233,9 +244,11 @@ model Ranking {
   computedAt      DateTime @default(now()) @map("computed_at")
 
   member          Member   @relation(fields: [memberId], references: [id])
-  constituency    Constituency @relation(fields: [constituencyId], references: [id])
+  district        District @relation(fields: [districtId], references: [id])
+  province        Province? @relation(fields: [provinceId], references: [id])
+  provinceId      String?  @map("province_id")
 
-  @@unique([memberId, constituencyId, period])
+  @@unique([memberId, districtId, period])
   @@map("rankings")
 }
 
@@ -263,10 +276,34 @@ model Project {
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
   tasks       Task[]
+  districts   ProjectDistrict[]
+  provinces   ProjectProvince[]
   constituencies ProjectConstituency[]
   documents   Document[]
 
   @@map("projects")
+}
+
+model ProjectDistrict {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  districtId  String   @map("district_id")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  district    District @relation(fields: [districtId], references: [id])
+
+  @@unique([projectId, districtId])
+  @@map("project_districts")
+}
+
+model ProjectProvince {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  provinceId  String   @map("province_id")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  province    Province @relation(fields: [provinceId], references: [id])
+
+  @@unique([projectId, provinceId])
+  @@map("project_provinces")
 }
 
 model ProjectConstituency {
@@ -360,7 +397,7 @@ model Announcement {
   message     String
   messageUrdu String?  @map("message_urdu")
   
-  // Targeting
+  // Targeting: Province > District > Tehsil
   targetType  AnnouncementTarget @default(ALL) @map("target_type")
   provinceId  String?  @map("province_id")
   districtId  String?  @map("district_id")

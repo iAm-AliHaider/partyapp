@@ -2,18 +2,18 @@ import prisma from "./prisma";
 import { calculateMemberScore } from "./referral-engine";
 
 /**
- * Recompute rankings for a specific constituency
+ * Recompute rankings for a specific district
  */
-export async function computeConstituencyRankings(
-  constituencyId: string,
+export async function computeDistrictRankings(
+  districtId: string,
   period?: string
 ): Promise<void> {
   const currentPeriod = period ?? getCurrentPeriod();
 
-  // Get all active members in this constituency
+  // Get all active members in this district
   const members = await prisma.member.findMany({
     where: {
-      constituencyId,
+      districtId,
       status: "ACTIVE",
     },
     select: { id: true },
@@ -30,6 +30,9 @@ export async function computeConstituencyRankings(
   // Sort by total score descending
   scores.sort((a, b) => b.totalScore - a.totalScore);
 
+  // Get district's province
+  const district = await prisma.district.findUnique({ where: { id: districtId }, select: { provinceId: true } });
+
   // Upsert rankings
   for (let i = 0; i < scores.length; i++) {
     const s = scores[i];
@@ -37,9 +40,9 @@ export async function computeConstituencyRankings(
 
     await prisma.ranking.upsert({
       where: {
-        memberId_constituencyId_period: {
+        memberId_districtId_period: {
           memberId: s.memberId,
-          constituencyId,
+          districtId,
           period: currentPeriod,
         },
       },
@@ -55,7 +58,8 @@ export async function computeConstituencyRankings(
       },
       create: {
         memberId: s.memberId,
-        constituencyId,
+        districtId,
+        provinceId: district?.provinceId,
         score: s.totalScore,
         rank,
         directReferrals: s.directCount,
@@ -76,10 +80,10 @@ export async function computeConstituencyRankings(
 }
 
 /**
- * Get leaderboard for a constituency
+ * Get leaderboard for a district
  */
-export async function getConstituencyLeaderboard(
-  constituencyId: string,
+export async function getDistrictLeaderboard(
+  districtId: string,
   limit: number = 20,
   period?: string
 ) {
@@ -87,7 +91,7 @@ export async function getConstituencyLeaderboard(
 
   return prisma.ranking.findMany({
     where: {
-      constituencyId,
+      districtId,
       period: currentPeriod,
     },
     include: {
@@ -100,11 +104,10 @@ export async function getConstituencyLeaderboard(
           membershipNumber: true,
         },
       },
-      constituency: {
+      district: {
         select: {
-          code: true,
           name: true,
-          type: true,
+          province: { select: { name: true } },
         },
       },
     },
@@ -114,7 +117,7 @@ export async function getConstituencyLeaderboard(
 }
 
 /**
- * Get national leaderboard (top members across all constituencies)
+ * Get national leaderboard (top members across all districts)
  */
 export async function getNationalLeaderboard(limit: number = 50) {
   return prisma.member.findMany({
@@ -126,8 +129,8 @@ export async function getNationalLeaderboard(limit: number = 50) {
       score: true,
       rank: true,
       referralCode: true,
-      constituency: {
-        select: { code: true, name: true },
+      district: {
+        select: { name: true, province: { select: { name: true } } },
       },
     },
     orderBy: { score: "desc" },
@@ -136,10 +139,10 @@ export async function getNationalLeaderboard(limit: number = 50) {
 }
 
 /**
- * Get recommended candidates (rank 1 per constituency)
+ * Get recommended candidates (rank 1 per district)
  */
 export async function getRecommendedCandidates(
-  type?: string,
+  provinceId?: string,
   period?: string
 ) {
   const currentPeriod = period ?? getCurrentPeriod();
@@ -149,11 +152,7 @@ export async function getRecommendedCandidates(
       period: currentPeriod,
       rank: 1,
       overridden: false,
-      ...(type && {
-        constituency: {
-          type: type as any,
-        },
-      }),
+      ...(provinceId && { provinceId }),
     },
     include: {
       member: {
@@ -166,10 +165,12 @@ export async function getRecommendedCandidates(
           cnic: true,
         },
       },
-      constituency: true,
+      district: {
+        include: { province: true },
+      },
     },
     orderBy: {
-      constituency: { code: "asc" },
+      district: { name: "asc" },
     },
   });
 }

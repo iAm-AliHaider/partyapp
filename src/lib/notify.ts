@@ -28,8 +28,8 @@ export async function notifyNewMember(member: {
   name: string;
   phone: string;
   membershipNumber: string;
-  constituencyCode: string;
-  constituencyName: string;
+  districtName: string;
+  provinceName: string;
   referredBy?: string;
 }): Promise<void> {
   const lines = [
@@ -37,7 +37,7 @@ export async function notifyNewMember(member: {
     ``,
     `👤 *${member.name}*`,
     `📋 ${member.membershipNumber}`,
-    `🗺️ ${member.constituencyCode} — ${member.constituencyName}`,
+    `🗺️ ${member.districtName}, ${member.provinceName}`,
     `📱 ${member.phone}`,
   ];
 

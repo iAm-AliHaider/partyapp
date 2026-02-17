@@ -63,6 +63,15 @@ export const translations = {
       referralCode: "Referral Code",
       joining: "Joining...",
       joinParty: "Join Party",
+      selectLocation: "Select Your Location",
+      locationHelp: "Choose your province, district, and tehsil",
+      province: "Province",
+      district: "District",
+      districts: "districts",
+      searchDistrict: "Search district...",
+      tehsil: "Tehsil",
+      selectTehsil: "Select tehsil (optional)",
+      location: "Location",
     },
 
     // Home / Dashboard
@@ -83,6 +92,7 @@ export const translations = {
       profile: "Profile",
       editDetails: "Edit details",
       constituencyNotAssigned: "Constituency not assigned",
+      locationNotSet: "Location not set",
     },
 
     // Bottom Nav
@@ -229,6 +239,15 @@ export const translations = {
       referralCode: "ریفرل کوڈ",
       joining: "شامل ہو رہے ہیں...",
       joinParty: "رکن بنیں 🌙",
+      selectLocation: "اپنا مقام منتخب کریں",
+      locationHelp: "اپنا صوبہ، ضلع اور تحصیل منتخب کریں",
+      province: "صوبہ",
+      district: "ضلع",
+      districts: "اضلاع",
+      searchDistrict: "ضلع تلاش کریں...",
+      tehsil: "تحصیل",
+      selectTehsil: "تحصیل منتخب کریں (اختیاری)",
+      location: "مقام",
     },
 
     // Home / Dashboard
@@ -249,6 +268,7 @@ export const translations = {
       profile: "پروفائل",
       editDetails: "تفصیلات میں ترمیم",
       constituencyNotAssigned: "حلقہ تفویض نہیں ہوا",
+      locationNotSet: "مقام سیٹ نہیں ہے",
     },
 
     // Bottom Nav

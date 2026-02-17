@@ -14,7 +14,7 @@ export async function GET() {
       totalReferrals,
       activeToday,
       membersThisMonth,
-      constituencyCoverage,
+      districtCoverage,
       topRecruiters,
       recentMembers,
     ] = await Promise.all([
@@ -25,8 +25,8 @@ export async function GET() {
       prisma.member.count({ where: { lastActiveAt: { gte: today } } }),
       prisma.member.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
       prisma.member.groupBy({
-        by: ["constituencyId"],
-        where: { constituencyId: { not: null }, status: "ACTIVE" },
+        by: ["districtId"],
+        where: { districtId: { not: null }, status: "ACTIVE" },
         _count: true,
       }),
       prisma.member.findMany({
@@ -35,7 +35,8 @@ export async function GET() {
         take: 10,
         select: {
           id: true, name: true, score: true, referralCode: true, membershipNumber: true,
-          constituency: { select: { code: true, name: true } },
+          district: { select: { name: true } },
+          province: { select: { name: true } },
           _count: { select: { referrals: true } },
         },
       }),
@@ -44,12 +45,12 @@ export async function GET() {
         take: 10,
         select: {
           id: true, name: true, phone: true, status: true, createdAt: true,
-          constituency: { select: { code: true } },
+          district: { select: { name: true } },
         },
       }),
     ]);
 
-    const totalConstituencies = await prisma.constituency.count();
+    const totalDistricts = await prisma.district.count();
 
     return NextResponse.json({
       totalMembers,
@@ -58,8 +59,8 @@ export async function GET() {
       totalReferrals,
       activeToday,
       membersThisMonth,
-      constituenciesCovered: constituencyCoverage.length,
-      totalConstituencies,
+      districtsCovered: districtCoverage.length,
+      totalDistricts,
       topRecruiters,
       recentMembers,
     });

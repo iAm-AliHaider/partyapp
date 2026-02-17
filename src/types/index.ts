@@ -6,7 +6,9 @@ declare module "next-auth" {
       id: string;
       role: string;
       partyId: string;
-      constituencyId: string | null;
+      provinceId: string | null;
+      districtId: string | null;
+      tehsilId: string | null;
       referralCode: string;
       phone: string;
     } & DefaultSession["user"];
@@ -30,7 +32,9 @@ export interface MemberProfile {
   status: string;
   role: string;
   party: { name: string; logoUrl?: string };
-  constituency?: { code: string; name: string; type: string };
+  province?: { name: string };
+  district?: { name: string };
+  tehsil?: { name: string };
   createdAt: string;
 }
 
@@ -48,10 +52,9 @@ export interface LeaderboardEntry {
     photoUrl?: string;
     referralCode: string;
   };
-  constituency: {
-    code: string;
+  district: {
     name: string;
-    type: string;
+    province?: { name: string };
   };
 }
 

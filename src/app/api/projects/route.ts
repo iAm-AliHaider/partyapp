@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   if (status) where.status = status;
   if (category) where.category = category;
 
-  // Non-admins only see ACTIVE projects they're assigned to or in their constituency
+  // Non-admins only see ACTIVE projects
   if (!["ADMIN", "OWNER"].includes(role)) {
     where.status = "ACTIVE";
   }
@@ -26,7 +26,8 @@ export async function GET(req: NextRequest) {
     where,
     include: {
       createdBy: { select: { name: true } },
-      constituencies: { include: { constituency: { select: { code: true, name: true } } } },
+      districts: { include: { district: { select: { name: true } } } },
+      provinces: { include: { province: { select: { name: true } } } },
       _count: { select: { tasks: true } },
       tasks: {
         select: {
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Admin only" }, { status: 403 });
 
   const body = await req.json();
-  const { title, titleUrdu, description, category, priority, startDate, endDate, budget, targetVotes, targetMembers, constituencyIds } = body;
+  const { title, titleUrdu, description, category, priority, startDate, endDate, budget, targetVotes, targetMembers, districtIds, provinceIds } = body;
 
   if (!title || !category) {
     return NextResponse.json({ error: "Title and category are required" }, { status: 400 });
@@ -76,12 +77,16 @@ export async function POST(req: NextRequest) {
       targetVotes,
       targetMembers,
       createdById: (session.user as any).id,
-      constituencies: constituencyIds?.length > 0 ? {
-        create: constituencyIds.map((cId: string) => ({ constituencyId: cId })),
+      districts: districtIds?.length > 0 ? {
+        create: districtIds.map((dId: string) => ({ districtId: dId })),
+      } : undefined,
+      provinces: provinceIds?.length > 0 ? {
+        create: provinceIds.map((pId: string) => ({ provinceId: pId })),
       } : undefined,
     },
     include: {
-      constituencies: { include: { constituency: { select: { code: true } } } },
+      districts: { include: { district: { select: { name: true } } } },
+      provinces: { include: { province: { select: { name: true } } } },
       createdBy: { select: { name: true } },
     },
   });

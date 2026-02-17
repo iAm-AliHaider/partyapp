@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       const weekAgo = new Date(now.getTime() - 7 * 86400000);
       const monthAgo = new Date(now.getTime() - 30 * 86400000);
 
-      const [total, active, pending, suspended, newToday, newWeek, newMonth, referrals, totalConst] = await Promise.all([
+      const [total, active, pending, suspended, newToday, newWeek, newMonth, referrals, totalDistricts] = await Promise.all([
         prisma.member.count(),
         prisma.member.count({ where: { status: "ACTIVE" } }),
         prisma.member.count({ where: { status: "PENDING" } }),
@@ -24,20 +24,20 @@ export async function GET(req: NextRequest) {
         prisma.member.count({ where: { createdAt: { gte: weekAgo } } }),
         prisma.member.count({ where: { createdAt: { gte: monthAgo } } }),
         prisma.referral.count({ where: { status: "VERIFIED" } }),
-        prisma.constituency.count(),
+        prisma.district.count(),
       ]);
 
       const covered = await prisma.member.groupBy({
-        by: ["constituencyId"],
-        where: { constituencyId: { not: null }, status: "ACTIVE" },
+        by: ["districtId"],
+        where: { districtId: { not: null }, status: "ACTIVE" },
       });
 
       result.overview = {
         total, active, pending, suspended,
         newToday, newWeek, newMonth,
-        referrals, totalConstituencies: totalConst,
-        coveredConstituencies: covered.length,
-        coveragePercent: totalConst > 0 ? Math.round((covered.length / totalConst) * 100) : 0,
+        referrals, totalDistricts,
+        coveredDistricts: covered.length,
+        coveragePercent: totalDistricts > 0 ? Math.round((covered.length / totalDistricts) * 100) : 0,
       };
     }
 
@@ -89,28 +89,20 @@ export async function GET(req: NextRequest) {
 
     // ── Provincial Breakdown ──
     if (section === "all" || section === "provincial") {
-      const byType = await prisma.$queryRaw<any[]>`
-        SELECT c.type, COUNT(DISTINCT m.id)::int AS members, COUNT(DISTINCT c.id)::int AS constituencies
-        FROM constituencies c
-        LEFT JOIN members m ON m.constituency_id = c.id AND m.status = 'ACTIVE'
-        GROUP BY c.type
-        ORDER BY c.type
+      const byProvince = await prisma.$queryRaw<any[]>`
+        SELECT p.name, p.id, COUNT(DISTINCT m.id)::int AS members, COUNT(DISTINCT d.id)::int AS districts
+        FROM provinces p
+        LEFT JOIN districts d ON d.province_id = p.id
+        LEFT JOIN members m ON m.district_id = d.id AND m.status = 'ACTIVE'
+        GROUP BY p.id, p.name
+        ORDER BY members DESC
       `;
 
-      const provinceLabels: Record<string, string> = {
-        NA: "National Assembly", PP: "Punjab", PS: "Sindh", PK: "KPK", PB: "Balochistan",
-      };
-
-      const totalByType = await prisma.constituency.groupBy({ by: ["type"], _count: true });
-      const totalMap: Record<string, number> = {};
-      totalByType.forEach(t => { totalMap[t.type] = t._count; });
-
-      result.provincial = byType.map(b => ({
-        type: b.type,
-        label: provinceLabels[b.type] || b.type,
+      result.provincial = byProvince.map(b => ({
+        id: b.id,
+        name: b.name,
         members: b.members,
-        totalConstituencies: totalMap[b.type] || 0,
-        coveredConstituencies: b.constituencies,
+        districts: b.districts,
       }));
     }
 
@@ -125,7 +117,6 @@ export async function GET(req: NextRequest) {
         ORDER BY date
       `;
 
-      // Fill gaps
       const growthMap: Record<string, number> = {};
       growth.forEach(g => {
         const d = new Date(g.date).toISOString().split("T")[0];
@@ -143,17 +134,18 @@ export async function GET(req: NextRequest) {
       result.growth = filled;
     }
 
-    // ── Top Constituencies ──
-    if (section === "all" || section === "top-constituencies") {
-      const topConst = await prisma.$queryRaw<any[]>`
-        SELECT c.code, c.name, c.type, COUNT(m.id)::int AS members
-        FROM constituencies c
-        INNER JOIN members m ON m.constituency_id = c.id AND m.status = 'ACTIVE'
-        GROUP BY c.id, c.code, c.name, c.type
+    // ── Top Districts ──
+    if (section === "all" || section === "top-districts") {
+      const topDistricts = await prisma.$queryRaw<any[]>`
+        SELECT d.name AS district, p.name AS province, COUNT(m.id)::int AS members
+        FROM districts d
+        INNER JOIN provinces p ON p.id = d.province_id
+        INNER JOIN members m ON m.district_id = d.id AND m.status = 'ACTIVE'
+        GROUP BY d.id, d.name, p.name
         ORDER BY members DESC
         LIMIT 15
       `;
-      result.topConstituencies = topConst;
+      result.topDistricts = topDistricts;
     }
 
     // ── Top Recruiters ──
@@ -162,7 +154,8 @@ export async function GET(req: NextRequest) {
         where: { status: "ACTIVE", score: { gt: 0 } },
         select: {
           name: true, score: true, membershipNumber: true, referralCode: true,
-          constituency: { select: { code: true, name: true } },
+          district: { select: { name: true } },
+          province: { select: { name: true } },
           _count: { select: { referrals: true } },
         },
         orderBy: { score: "desc" },
@@ -208,7 +201,8 @@ export async function GET(req: NextRequest) {
         select: {
           name: true, phone: true, membershipNumber: true, status: true,
           gender: true, age: true, createdAt: true,
-          constituency: { select: { code: true, name: true } },
+          district: { select: { name: true } },
+          province: { select: { name: true } },
           referredBy: { select: { name: true } },
         },
       });
