@@ -542,6 +542,43 @@ export default function AIDashboard() {
               </div>
             ))}
           </div>
+          {/* Success Rate & Uptime */}
+          {actions.length > 0 && (() => {
+            const completed = actions.filter((a: any) => a.status === "COMPLETED").length;
+            const failed = actions.filter((a: any) => a.status === "FAILED").length;
+            const total = completed + failed;
+            const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+            return (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="card">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 size={14} className="text-emerald-600" />
+                    <p className="text-caption font-semibold text-label-tertiary uppercase tracking-wider">Success Rate</p>
+                  </div>
+                  <p className={`text-title ${rate >= 80 ? "text-emerald-600" : rate >= 50 ? "text-amber-600" : "text-red-500"}`}>{rate}%</p>
+                  <p className="text-caption text-label-quaternary mt-1">{completed} of {total} completed</p>
+                  <div className="h-1.5 bg-surface-tertiary rounded-full mt-2 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${rate >= 80 ? "bg-emerald-500" : rate >= 50 ? "bg-amber-400" : "bg-red-400"}`} style={{ width: `${rate}%` }} />
+                  </div>
+                </div>
+                <div className="card">
+                  <div className="flex items-center gap-2 mb-2">
+                    {bridgeStatus.online ? <Wifi size={14} className="text-emerald-600" /> : <WifiOff size={14} className="text-red-400" />}
+                    <p className="text-caption font-semibold text-label-tertiary uppercase tracking-wider">Bridge Status</p>
+                  </div>
+                  <p className={`text-title ${bridgeStatus.online ? "text-emerald-600" : "text-red-500"}`}>{bridgeStatus.online ? "Online" : "Offline"}</p>
+                  {bridgeStatus.lastHeartbeat && (
+                    <p className="text-caption text-label-quaternary mt-1">
+                      Last seen: {new Date(bridgeStatus.lastHeartbeat).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })}
+                      {bridgeStatus.staleSeconds && bridgeStatus.staleSeconds > 0 ? ` (${Math.round(bridgeStatus.staleSeconds / 60)}m ago)` : ""}
+                    </p>
+                  )}
+                  {bridgeStatus.deviceConnected && <p className="text-caption text-emerald-600 mt-1 flex items-center gap-1"><Smartphone size={10} /> Device connected</p>}
+                </div>
+              </div>
+            );
+          })()}
+
 
           {/* Quick Send */}
           <QuickSend onSend={quickSend} creating={creating} />

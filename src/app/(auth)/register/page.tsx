@@ -1,12 +1,68 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatCNIC } from "@/lib/cnic-validator";
 import { useLanguage, LanguageToggle } from "@/components/LanguageContext";
-import { ArrowLeft, Check, Search, X, ChevronRight } from "lucide-react";
+import { ArrowLeft, Check, Search, X, ChevronRight, Shield, Eye, EyeOff, Users } from "lucide-react";
+
+function PasswordStrength({ password }: { password: string }) {
+  const strength = useMemo(() => {
+    if (!password) return 0;
+    let s = 0;
+    if (password.length >= 6) s++;
+    if (password.length >= 10) s++;
+    if (/[A-Z]/.test(password)) s++;
+    if (/[0-9]/.test(password)) s++;
+    if (/[^A-Za-z0-9]/.test(password)) s++;
+    return Math.min(s, 4);
+  }, [password]);
+
+  if (!password) return null;
+  const labels = ["Weak", "Fair", "Good", "Strong"];
+  const colors = ["bg-red-400", "bg-orange-400", "bg-amber-400", "bg-emerald-400"];
+
+  return (
+    <div className="mt-2">
+      <div className="flex gap-1">
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < strength ? colors[strength - 1] : "bg-surface-tertiary"}`} />
+        ))}
+      </div>
+      <p className={`text-caption mt-1 ${strength <= 1 ? "text-red-500" : strength <= 2 ? "text-amber-600" : "text-emerald-600"}`}>
+        {labels[strength - 1] || "Too short"}
+      </p>
+    </div>
+  );
+}
+
+function StepIndicator({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) {
+  return (
+    <div className="flex items-center justify-center gap-3 mb-6">
+      {Array.from({ length: totalSteps }, (_, i) => {
+        const step = i + 1;
+        const isComplete = step < currentStep;
+        const isCurrent = step === currentStep;
+        return (
+          <div key={step} className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+              isComplete ? "bg-emerald-500 text-white" :
+              isCurrent ? "bg-accent text-white shadow-apple" :
+              "bg-surface-tertiary text-label-tertiary"
+            }`}>
+              {isComplete ? <Check size={14} strokeWidth={3} /> : <span className="text-subhead font-semibold">{step}</span>}
+            </div>
+            {step < totalSteps && (
+              <div className={`w-8 h-0.5 rounded-full transition-all ${step < currentStep ? "bg-emerald-400" : "bg-surface-tertiary"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function RegisterForm() {
   const router = useRouter();
@@ -17,6 +73,8 @@ function RegisterForm() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [agreedTerms, setAgreedTerms] = useState(false);
 
   const [provinces, setProvinces] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
@@ -61,6 +119,9 @@ function RegisterForm() {
 
   return (
     <div className="min-h-screen bg-surface-secondary flex flex-col safe-area-inset">
+      {/* Gradient accent strip */}
+      <div className="h-1.5 bg-gradient-to-r from-accent via-accent/80 to-gold" />
+
       {/* Top nav */}
       <div className="flex justify-between items-center px-5 pt-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 16px) + 8px)" }}>
         <Link href="/" className="w-9 h-9 rounded-full bg-surface-tertiary flex items-center justify-center tap-scale">
@@ -69,33 +130,33 @@ function RegisterForm() {
         <LanguageToggle className="!bg-surface-tertiary !text-label-secondary !rounded-full !px-3 !py-1.5 text-subhead" />
       </div>
 
-      <div className="flex-1 px-6 pt-8 pb-8">
+      <div className="flex-1 px-6 pt-6 pb-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">
           <Image src="/icons/party-logo.png" alt="Logo" width={44} height={44} className="rounded-apple shadow-apple" />
           <p className="text-subhead text-label-tertiary font-medium">Awaam Raaj</p>
         </div>
-        <h1 className="text-title tracking-tight mb-1">{t.auth.joinTitle}</h1>
-        <p className="text-callout text-label-tertiary mb-5">{t.auth.step} {step} {t.auth.of} 3</p>
+        <h1 className="text-title tracking-tight mb-4">{t.auth.joinTitle}</h1>
 
-        {/* Progress bar */}
-        <div className="h-1 bg-surface-tertiary rounded-full mb-8">
-          <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${(step / 3) * 100}%` }} />
-        </div>
+        {/* Step Indicator */}
+        <StepIndicator currentStep={step} totalSteps={3} />
 
         {error && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-apple-lg text-callout font-medium mb-4">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* STEP 1 */}
           {step === 1 && (
-            <>
+            <div className="space-y-4 animate-[fadeIn_0.3s_ease-out]">
               <div>
                 <label className="text-subhead font-medium text-label-secondary mb-1.5 block">{t.register.fullName} *</label>
                 <input type="text" value={form.name} onChange={(e) => updateField("name", e.target.value)} placeholder={t.register.enterName} className="input-field" required />
               </div>
               <div>
                 <label className="text-subhead font-medium text-label-secondary mb-1.5 block">{t.register.cnic} *</label>
-                <input type="text" value={form.cnic} onChange={(e) => { const raw = e.target.value.replace(/\D/g, "").slice(0, 13); updateField("cnic", raw); }} placeholder="XXXXX-XXXXXXX-X" className="input-field font-mono" dir="ltr" maxLength={15} required />
+                <div className="relative">
+                  <Shield size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-label-tertiary" />
+                  <input type="text" value={form.cnic} onChange={(e) => { const raw = e.target.value.replace(/\D/g, "").slice(0, 13); updateField("cnic", raw); }} placeholder="XXXXX-XXXXXXX-X" className="input-field font-mono !pl-10" dir="ltr" maxLength={15} required />
+                </div>
                 {form.cnic.length === 13 && <p className="text-caption text-label-tertiary mt-1" dir="ltr">{formatCNIC(form.cnic)}</p>}
               </div>
               <div>
@@ -107,17 +168,23 @@ function RegisterForm() {
               </div>
               <div>
                 <label className="text-subhead font-medium text-label-secondary mb-1.5 block">{t.auth.password} *</label>
-                <input type="password" value={form.password} onChange={(e) => updateField("password", e.target.value)} placeholder={t.register.createPassword} className="input-field" required />
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => updateField("password", e.target.value)} placeholder={t.register.createPassword} className="input-field !pr-12" required />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-label-tertiary">
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <PasswordStrength password={form.password} />
               </div>
               <button type="button" onClick={() => setStep(2)} className="btn-primary w-full" disabled={!form.name || !form.cnic || !form.phone || !form.password}>
                 {t.register.next}
               </button>
-            </>
+            </div>
           )}
 
           {/* STEP 2: Location */}
           {step === 2 && (
-            <>
+            <div className="space-y-4 animate-[fadeIn_0.3s_ease-out]">
               <p className="text-headline text-label-primary text-center">{t.register.selectLocation || "Select Your Location"}</p>
               <p className="text-caption text-label-tertiary text-center mb-2">{t.register.locationHelp || "Choose your province, district, and tehsil"}</p>
 
@@ -127,11 +194,18 @@ function RegisterForm() {
                 <div className="grid grid-cols-2 gap-2">
                   {provinces.map((p) => (
                     <button key={p.id} type="button" onClick={() => updateField("provinceId", p.id)}
-                      className={`px-3 py-3 rounded-apple-lg text-callout font-medium transition-all text-left tap-scale ${
+                      className={`px-3 py-3 rounded-apple-lg text-callout font-medium transition-all text-left tap-scale relative overflow-hidden ${
                         form.provinceId === p.id ? "bg-accent text-white shadow-apple" : "bg-surface-primary text-label-primary shadow-apple"
                       }`}>
                       {p.name}
                       {p.nameUrdu && <span className="block text-caption opacity-70 font-urdu mt-0.5">{p.nameUrdu}</span>}
+                      {p._count?.members > 0 && (
+                        <span className={`absolute top-2 right-2 text-caption font-semibold flex items-center gap-0.5 ${
+                          form.provinceId === p.id ? "text-white/80" : "text-label-quaternary"
+                        }`}>
+                          <Users size={9} />{p._count.members}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -189,12 +263,12 @@ function RegisterForm() {
                 <button type="button" onClick={() => setStep(1)} className="btn-secondary flex-1">{t.back}</button>
                 <button type="button" onClick={() => setStep(3)} className="btn-primary flex-1" disabled={!form.districtId}>{t.register.next}</button>
               </div>
-            </>
+            </div>
           )}
 
           {/* STEP 3 */}
           {step === 3 && (
-            <>
+            <div className="space-y-4 animate-[fadeIn_0.3s_ease-out]">
               {selectedDistrict && (
                 <div className="bg-accent-50 rounded-apple-lg p-3 mb-2">
                   <p className="text-caption text-label-tertiary">{t.register.location || "Location"}</p>
@@ -233,11 +307,34 @@ function RegisterForm() {
                 <label className="text-subhead font-medium text-label-secondary mb-1.5 block">{t.register.referralCode} <span className="text-label-quaternary">({t.register.optional})</span></label>
                 <input type="text" value={form.referralCode} onChange={(e) => updateField("referralCode", e.target.value.toUpperCase())} placeholder="AR-XXXXXX" className="input-field font-mono" dir="ltr" />
               </div>
+
+              {/* Terms & Conditions */}
+              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-apple-lg bg-surface-primary shadow-apple">
+                <div
+                  onClick={(e) => { e.preventDefault(); setAgreedTerms(!agreedTerms); }}
+                  className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                    agreedTerms ? "bg-accent" : "bg-surface-tertiary border border-label-quaternary"
+                  }`}
+                >
+                  {agreedTerms && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-subhead text-label-secondary leading-relaxed">
+                  {(t.register as any).agreeTerms || "I agree to the Terms of Service and Privacy Policy of Awaam Raaj Tehreek"}
+                </span>
+              </label>
+
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setStep(2)} className="btn-secondary flex-1">{t.back}</button>
-                <button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? t.register.joining : t.register.joinParty}</button>
+                <button type="submit" disabled={loading || !agreedTerms} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                  {loading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                  {loading ? t.register.joining : t.register.joinParty}
+                </button>
               </div>
-            </>
+            </div>
           )}
         </form>
       </div>

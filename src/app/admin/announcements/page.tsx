@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Megaphone, Send, Trash2, Globe, MapPin, Users as UsersIcon, User, Search, Check } from "lucide-react";
+import { Megaphone, Send, Trash2, Globe, MapPin, Users as UsersIcon, User, Search, Check, Clock, Zap, Copy, BarChart3 } from "lucide-react";
 
 const TARGET_LABELS: Record<string, string> = {
   ALL: "All Members", PROVINCE: "Province", DISTRICT: "District",
@@ -19,6 +19,39 @@ const STATUS_BADGE: Record<string, string> = {
   DRAFT: "badge-gray", SENDING: "badge-yellow", SENT: "badge-green", FAILED: "badge-red", CANCELLED: "badge-gray",
 };
 
+// ── Message Templates ──
+const TEMPLATES = [
+  { label: "Meeting Notice", title: "Meeting Notice", titleUrdu: "میٹنگ کا نوٹس", message: "Dear members, a meeting has been scheduled. Please attend on time.", messageUrdu: "تمام ارکان سے گزارش ہے کہ میٹنگ میں بروقت شرکت کریں۔" },
+  { label: "General Update", title: "Party Update", titleUrdu: "پارٹی اپڈیٹ", message: "Important update from Awaam Raaj Tehreek leadership.", messageUrdu: "عوام راج تحریک کی قیادت سے اہم اپڈیٹ۔" },
+  { label: "Campaign Alert", title: "Campaign Alert", titleUrdu: "مہم الرٹ", message: "A new campaign has been launched. Please participate actively.", messageUrdu: "ایک نئی مہم شروع کی گئی ہے۔ براہ کرم فعال طور پر حصہ لیں۔" },
+  { label: "Jalsa Invite", title: "Jalsa Invitation", titleUrdu: "جلسے کی دعوت", message: "You are invited to attend the upcoming jalsa. Bring your family and friends!", messageUrdu: "آپ کو آنے والے جلسے میں شرکت کی دعوت دی جاتی ہے۔" },
+];
+
+function DeliveryStats({ ann }: { ann: any }) {
+  const total = ann.totalTarget || 0;
+  const sent = ann.sentCount || 0;
+  const failed = ann.failedCount || 0;
+  const pending = total - sent - failed;
+  if (total === 0) return null;
+
+  const sentPct = Math.round((sent / total) * 100);
+  const failedPct = Math.round((failed / total) * 100);
+
+  return (
+    <div className="mt-3">
+      <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-surface-tertiary">
+        {sentPct > 0 && <div className="bg-emerald-500 rounded-full transition-all" style={{ width: `${sentPct}%` }} />}
+        {failedPct > 0 && <div className="bg-red-400 rounded-full transition-all" style={{ width: `${failedPct}%` }} />}
+      </div>
+      <div className="flex justify-between mt-1">
+        <span className="text-caption text-emerald-600">{sent} sent ({sentPct}%)</span>
+        {failed > 0 && <span className="text-caption text-red-500">{failed} failed</span>}
+        {pending > 0 && <span className="text-caption text-label-tertiary">{pending} pending</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function AnnouncementsPage() {
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
@@ -33,7 +66,7 @@ export default function AnnouncementsPage() {
   const [filterDistrict, setFilterDistrict] = useState("");
   const [filterTehsil, setFilterTehsil] = useState("");
   const [memberSearch, setMemberSearch] = useState("");
-  const [form, setForm] = useState({ title: "", titleUrdu: "", message: "", messageUrdu: "", targetType: "ALL", provinceId: "", districtId: "", tehsilId: "", constituencyId: "", memberIds: [] as string[] });
+  const [form, setForm] = useState({ title: "", titleUrdu: "", message: "", messageUrdu: "", targetType: "ALL", provinceId: "", districtId: "", tehsilId: "", constituencyId: "", memberIds: [] as string[], scheduledFor: "" });
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [tab, setTab] = useState<"create" | "history">("create");
@@ -83,6 +116,10 @@ export default function AnnouncementsPage() {
 
   const toggleMember = (id: string) => setForm(p => ({ ...p, memberIds: p.memberIds.includes(id) ? p.memberIds.filter(i => i !== id) : [...p.memberIds, id] }));
 
+  const applyTemplate = (tmpl: typeof TEMPLATES[0]) => {
+    setForm(p => ({ ...p, title: tmpl.title, titleUrdu: tmpl.titleUrdu, message: tmpl.message, messageUrdu: tmpl.messageUrdu }));
+  };
+
   const createAnnouncement = async () => {
     setCreating(true);
     try {
@@ -92,8 +129,9 @@ export default function AnnouncementsPage() {
       if (form.targetType === "TEHSIL") payload.tehsilId = form.tehsilId || filterTehsil;
       if (form.targetType === "CONSTITUENCY") payload.constituencyId = form.constituencyId;
       if (form.targetType === "INDIVIDUAL") payload.memberIds = form.memberIds;
+      if (form.scheduledFor) payload.scheduledFor = form.scheduledFor;
       const res = await fetch("/api/announcements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (res.ok) { setForm({ title: "", titleUrdu: "", message: "", messageUrdu: "", targetType: "ALL", provinceId: "", districtId: "", tehsilId: "", constituencyId: "", memberIds: [] }); loadData(); setTab("history"); }
+      if (res.ok) { setForm({ title: "", titleUrdu: "", message: "", messageUrdu: "", targetType: "ALL", provinceId: "", districtId: "", tehsilId: "", constituencyId: "", memberIds: [], scheduledFor: "" }); loadData(); setTab("history"); }
       else { const err = await res.json(); alert(err.error || "Failed"); }
     } finally { setCreating(false); }
   };
@@ -119,8 +157,28 @@ export default function AnnouncementsPage() {
 
   if (loading) return <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="skeleton h-20 rounded-apple-lg" />)}</div>;
 
+  // Stats
+  const totalSent = announcements.filter(a => a.status === "SENT").length;
+  const totalDraft = announcements.filter(a => a.status === "DRAFT").length;
+
   return (
     <div className="space-y-5">
+      {/* Stats bar */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="card text-center py-3">
+          <p className="text-headline text-label-primary">{announcements.length}</p>
+          <p className="text-caption text-label-tertiary">Total</p>
+        </div>
+        <div className="card text-center py-3">
+          <p className="text-headline text-emerald-600">{totalSent}</p>
+          <p className="text-caption text-label-tertiary">Sent</p>
+        </div>
+        <div className="card text-center py-3">
+          <p className="text-headline text-amber-600">{totalDraft}</p>
+          <p className="text-caption text-label-tertiary">Draft</p>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="flex gap-2 bg-surface-tertiary p-1 rounded-apple-lg">
         {(["create", "history"] as const).map(key => (
@@ -134,6 +192,19 @@ export default function AnnouncementsPage() {
       {/* CREATE */}
       {tab === "create" && (
         <div className="space-y-4">
+          {/* Quick Templates */}
+          <div>
+            <p className="text-footnote font-semibold text-label-tertiary uppercase tracking-wider mb-2">Quick Templates</p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {TEMPLATES.map((tmpl, i) => (
+                <button key={i} onClick={() => applyTemplate(tmpl)}
+                  className="pill pill-inactive whitespace-nowrap flex items-center gap-1.5 tap-scale">
+                  <Copy size={11} /> {tmpl.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="card space-y-4">
             <p className="text-headline text-label-primary">Message</p>
             <div>
@@ -142,7 +213,7 @@ export default function AnnouncementsPage() {
             </div>
             <div>
               <label className="text-caption font-medium text-label-secondary mb-1 block">Title (Urdu)</label>
-              <input value={form.titleUrdu} onChange={e => setForm(p => ({ ...p, titleUrdu: e.target.value }))} className="input-field font-urdu" dir="rtl" placeholder="اردو عنوان" />
+              <input value={form.titleUrdu} onChange={e => setForm(p => ({ ...p, titleUrdu: e.target.value }))} className="input-field font-urdu" dir="rtl" placeholder="اعلان عنوان" />
             </div>
             <div>
               <label className="text-caption font-medium text-label-secondary mb-1 block">Message *</label>
@@ -150,8 +221,18 @@ export default function AnnouncementsPage() {
             </div>
             <div>
               <label className="text-caption font-medium text-label-secondary mb-1 block">Message (Urdu)</label>
-              <textarea value={form.messageUrdu} onChange={e => setForm(p => ({ ...p, messageUrdu: e.target.value }))} className="input-field font-urdu" dir="rtl" rows={3} placeholder="اردو پیغام..." />
+              <textarea value={form.messageUrdu} onChange={e => setForm(p => ({ ...p, messageUrdu: e.target.value }))} className="input-field font-urdu" dir="rtl" rows={3} placeholder="اعلان پیغام...." />
             </div>
+          </div>
+
+          {/* Schedule */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-3">
+              <Clock size={15} className="text-label-tertiary" />
+              <p className="text-callout font-semibold text-label-primary">Schedule (optional)</p>
+            </div>
+            <input type="datetime-local" value={form.scheduledFor} onChange={e => setForm(p => ({ ...p, scheduledFor: e.target.value }))} className="input-field" />
+            {form.scheduledFor && <p className="text-caption text-label-tertiary mt-1">Will be sent at {new Date(form.scheduledFor).toLocaleString()}</p>}
           </div>
 
           <div className="card space-y-4">
@@ -256,7 +337,7 @@ export default function AnnouncementsPage() {
           <button onClick={createAnnouncement} disabled={creating || !form.title || !form.message}
             className="btn-primary w-full flex items-center justify-center gap-2">
             <Megaphone size={16} />
-            {creating ? "Creating..." : "Create Announcement"}
+            {creating ? "Creating..." : form.scheduledFor ? "Schedule Announcement" : "Create Announcement"}
           </button>
         </div>
       )}
@@ -274,14 +355,15 @@ export default function AnnouncementsPage() {
                 <span className={`badge ${STATUS_BADGE[ann.status] || "badge-gray"}`}>{ann.status}</span>
               </div>
               <p className="text-callout text-label-secondary mb-3 line-clamp-2">{ann.message}</p>
-              <div className="flex flex-wrap gap-3 text-caption text-label-tertiary mb-3">
+              <div className="flex flex-wrap gap-3 text-caption text-label-tertiary mb-2">
                 <span>{TARGET_LABELS[ann.targetType]}</span>
                 <span>{ann.totalTarget} targets</span>
-                {ann.sentCount > 0 && <span className="text-emerald-600">{ann.sentCount} sent</span>}
-                {ann.failedCount > 0 && <span className="text-red-500">{ann.failedCount} failed</span>}
                 <span>{new Date(ann.createdAt).toLocaleDateString("en-PK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
               </div>
-              <div className="flex gap-2">
+
+              <DeliveryStats ann={ann} />
+
+              <div className="flex gap-2 mt-3">
                 {ann.status === "DRAFT" && (
                   <>
                     <button onClick={() => sendAnnouncement(ann.id)} disabled={sending === ann.id}

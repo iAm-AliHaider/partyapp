@@ -1,10 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { RefreshCw, Trophy, Users, MapPin, TrendingUp, Award, Clock, Layers } from "lucide-react";
+import { RefreshCw, Trophy, Users, MapPin, TrendingUp, Award, Clock, Layers, Download, ArrowUp, ArrowDown, Minus } from "lucide-react";
+
+// ── Animated Counter ──
+
+function AnimCounter({ value, duration = 800 }: { value: number; duration?: number }) {
+  const [display, setDisplay] = useState(0);
+  const prevRef = useRef(0);
+  useEffect(() => {
+    if (value === 0) { setDisplay(0); return; }
+    const start = prevRef.current;
+    const diff = value - start;
+    const steps = 24;
+    let step = 0;
+    const interval = setInterval(() => {
+      step++;
+      if (step >= steps) { setDisplay(value); prevRef.current = value; clearInterval(interval); }
+      else { const eased = start + diff * (1 - Math.pow(1 - step / steps, 3)); setDisplay(Math.round(eased)); }
+    }, duration / steps);
+    return () => clearInterval(interval);
+  }, [value, duration]);
+  return <>{display.toLocaleString()}</>;
+}
+
+// ── Comparison Badge ──
+
+function DeltaBadge({ current, previous, label }: { current: number; previous: number; label?: string }) {
+  const diff = current - previous;
+  if (diff === 0) return <span className="text-caption text-label-quaternary flex items-center gap-0.5"><Minus size={9} /> {label || "no change"}</span>;
+  const isUp = diff > 0;
+  return (
+    <span className={`text-caption font-semibold flex items-center gap-0.5 ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+      {isUp ? <ArrowUp size={9} /> : <ArrowDown size={9} />}
+      {isUp ? "+" : ""}{diff} {label || "vs last week"}
+    </span>
+  );
+}
 
 // ── SVG Charts ──
 
@@ -93,20 +128,36 @@ export default function AdminDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"overview" | "demographics" | "geography" | "referrals">("overview");
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   useEffect(() => {
     if (status === "unauthenticated") { router.push("/login"); return; }
     if (status === "authenticated") {
       const role = (session?.user as any)?.role;
       if (!["ADMIN", "OWNER"].includes(role)) { router.push("/home"); return; }
-      fetch("/api/analytics").then(r => r.json()).then(d => { setData(d); setLoading(false); });
+      loadData();
     }
   }, [status, session, router]);
+
+  const loadData = () => {
+    fetch("/api/analytics").then(r => r.json()).then(d => { setData(d); setLoading(false); setLastRefresh(new Date()); });
+  };
+
+  // Auto-refresh every 60s
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    const interval = setInterval(loadData, 60000);
+    return () => clearInterval(interval);
+  }, [status]);
 
   const computeRankings = async () => {
     const res = await fetch("/api/rankings/compute", { method: "POST" });
     const d = await res.json();
     alert(`Rankings computed for ${d.computed} districts`);
+  };
+
+  const exportCSV = () => {
+    window.open("/api/members?format=csv&admin=true", "_blank");
   };
 
   if (loading) return <div className="space-y-4">{[1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton h-28 rounded-apple-lg" />)}</div>;
@@ -132,12 +183,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-5">
-      {/* Refresh */}
-      <div className="flex justify-end">
-        <button onClick={() => { setLoading(true); fetch("/api/analytics").then(r => r.json()).then(d => { setData(d); setLoading(false); }); }}
-          className="w-9 h-9 rounded-full bg-surface-tertiary flex items-center justify-center tap-scale">
-          <RefreshCw size={16} className="text-label-secondary" />
-        </button>
+      {/* Refresh + Export */}
+      <div className="flex justify-between items-center">
+        <p className="text-caption text-label-quaternary">
+          Updated {lastRefresh.toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })}
+        </p>
+        <div className="flex gap-2">
+          <button onClick={exportCSV} className="w-9 h-9 rounded-full bg-surface-tertiary flex items-center justify-center tap-scale" title="Export CSV">
+            <Download size={16} className="text-label-secondary" />
+          </button>
+          <button onClick={() => { setLoading(true); loadData(); }}
+            className="w-9 h-9 rounded-full bg-surface-tertiary flex items-center justify-center tap-scale">
+            <RefreshCw size={16} className="text-label-secondary" />
+          </button>
+        </div>
       </div>
 
       {/* Tab Pills */}
@@ -162,12 +221,12 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-2 gap-3">
             <div className="card">
               <p className="text-caption font-semibold text-label-tertiary uppercase tracking-wider">Total Members</p>
-              <p className="text-title text-label-primary mt-1">{o.total?.toLocaleString()}</p>
-              <p className="text-caption text-label-quaternary mt-1">+{o.newToday} today, +{o.newWeek} week</p>
+              <p className="text-title text-label-primary mt-1"><AnimCounter value={o.total || 0} /></p>
+              <DeltaBadge current={o.newWeek || 0} previous={0} label={`+${o.newToday || 0} today`} />
             </div>
             <div className="card">
               <p className="text-caption font-semibold text-label-tertiary uppercase tracking-wider">Coverage</p>
-              <p className="text-title text-label-primary mt-1">{o.coveragePercent}%</p>
+              <p className="text-title text-label-primary mt-1"><AnimCounter value={o.coveragePercent || 0} />%</p>
               <p className="text-caption text-label-quaternary mt-1">{o.coveredTehsils}/{o.totalTehsils} tehsils</p>
             </div>
           </div>
@@ -179,7 +238,7 @@ export default function AdminDashboard() {
               { label: "Referrals", value: o.referrals, color: "text-blue-600" },
             ].map((s, i) => (
               <div key={i} className="card text-center py-4">
-                <p className={`text-title-sm ${s.color}`}>{s.value}</p>
+                <p className={`text-title-sm ${s.color}`}><AnimCounter value={s.value || 0} /></p>
                 <p className="text-caption text-label-tertiary mt-0.5">{s.label}</p>
               </div>
             ))}
@@ -189,7 +248,9 @@ export default function AdminDashboard() {
           <div className="card">
             <div className="flex justify-between items-center mb-3">
               <p className="text-headline text-label-primary">Growth Trend</p>
-              <p className="text-caption text-label-tertiary">+{o.newMonth} this month</p>
+              <div className="flex items-center gap-2">
+                <span className="badge badge-green">+{o.newMonth || 0} this month</span>
+              </div>
             </div>
             <SparkLine data={growth} color="#DC2626" height={70} />
             <div className="flex justify-between mt-2">
@@ -221,7 +282,10 @@ export default function AdminDashboard() {
 
           {/* Top Recruiters */}
           <div className="card">
-            <p className="text-headline text-label-primary mb-3">Top Recruiters</p>
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-headline text-label-primary">Top Recruiters</p>
+              <span className="badge badge-gray">{topRec.length}</span>
+            </div>
             {topRec.length > 0 ? (
               <div className="space-y-3">
                 {topRec.slice(0, 10).map((m: any, i: number) => (
@@ -296,6 +360,30 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          {/* Top & Bottom Districts */}
+          {topConst.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="card">
+                <p className="text-callout font-semibold text-emerald-600 mb-2">🔝 Top 5</p>
+                {topConst.slice(0, 5).map((c: any, i: number) => (
+                  <div key={i} className="flex justify-between py-1.5">
+                    <span className="text-caption text-label-primary truncate flex-1">{c.district || c.name}</span>
+                    <span className="text-caption font-semibold text-label-primary ml-2">{c.members}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="card">
+                <p className="text-callout font-semibold text-red-500 mb-2">🔻 Bottom 5</p>
+                {topConst.slice(-5).reverse().map((c: any, i: number) => (
+                  <div key={i} className="flex justify-between py-1.5">
+                    <span className="text-caption text-label-primary truncate flex-1">{c.district || c.name}</span>
+                    <span className="text-caption font-semibold text-label-quaternary ml-2">{c.members}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="card">
             <p className="text-headline text-label-primary mb-3">Top Districts</p>
             {topConst.length > 0 ? (
@@ -332,7 +420,7 @@ export default function AdminDashboard() {
                 return (
                   <div key={level} className="text-center p-4 bg-surface-tertiary rounded-apple-lg">
                     <p className="text-caption text-label-tertiary font-semibold">Level {level}</p>
-                    <p className="text-title-sm text-label-primary mt-1">{d?.count || 0}</p>
+                    <p className="text-title-sm text-label-primary mt-1"><AnimCounter value={d?.count || 0} /></p>
                     <p className="text-caption text-label-quaternary mt-0.5">{d?.points || 0} pts</p>
                   </div>
                 );
@@ -360,7 +448,7 @@ export default function AdminDashboard() {
       )}
 
       <p className="text-center text-caption text-label-quaternary pb-4">
-        Updated {new Date().toLocaleString("en-PK", { timeZone: "Asia/Karachi" })}
+        Auto-refreshes every 60s · {new Date().toLocaleString("en-PK", { timeZone: "Asia/Karachi" })}
       </p>
     </div>
   );

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, X, FolderKanban, Check, Flag, Calendar, Target, Wallet } from "lucide-react";
+import { Plus, X, FolderKanban, Check, Flag, Calendar, Target, Wallet, BarChart3, Clock, CheckCircle2, Pause, XCircle } from "lucide-react";
 
 const CATEGORIES = [
   { key: "CAMPAIGN", label: "Campaign" },
@@ -24,7 +24,48 @@ const STATUSES = ["DRAFT", "ACTIVE", "PAUSED", "COMPLETED", "CANCELLED"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
 const statusBadge: Record<string, string> = { DRAFT: "badge-gray", ACTIVE: "badge-green", PAUSED: "badge-yellow", COMPLETED: "badge-blue", CANCELLED: "badge-red" };
+const statusIcon: Record<string, any> = { DRAFT: Clock, ACTIVE: CheckCircle2, PAUSED: Pause, COMPLETED: CheckCircle2, CANCELLED: XCircle };
 const priorityColor: Record<string, string> = { LOW: "text-label-tertiary", MEDIUM: "text-blue-600", HIGH: "text-orange-500", URGENT: "text-accent" };
+
+function KanbanOverview({ projects }: { projects: any[] }) {
+  const counts = STATUSES.map(s => ({
+    status: s,
+    count: projects.filter(p => p.status === s).length,
+    icon: statusIcon[s] || Clock,
+  }));
+
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1">
+      {counts.map(c => {
+        const Icon = c.icon;
+        return (
+          <div key={c.status} className="card text-center py-3 min-w-[72px] flex-1">
+            <Icon size={16} className={`mx-auto mb-1 ${c.count > 0 ? "text-label-primary" : "text-label-quaternary"}`} />
+            <p className="text-headline text-label-primary">{c.count}</p>
+            <p className="text-caption text-label-tertiary">{c.status}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function BudgetBar({ budget, spent }: { budget?: number; spent?: number }) {
+  if (!budget || budget <= 0) return null;
+  const pct = spent ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
+  return (
+    <div className="mt-2">
+      <div className="flex justify-between text-caption mb-1">
+        <span className="text-label-tertiary flex items-center gap-1"><Wallet size={10} /> Budget</span>
+        <span className="text-label-secondary font-medium">PKR {budget.toLocaleString()}</span>
+      </div>
+      <div className="h-1.5 bg-surface-tertiary rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${pct > 80 ? "bg-red-400" : pct > 50 ? "bg-amber-400" : "bg-emerald-400"}`} style={{ width: `${pct}%` }} />
+      </div>
+      {spent && spent > 0 && <p className="text-caption text-label-quaternary mt-0.5">{pct}% utilized</p>}
+    </div>
+  );
+}
 
 export default function AdminProjects() {
   const { data: session, status: authStatus } = useSession();
@@ -75,6 +116,9 @@ export default function AdminProjects() {
 
   return (
     <div className="space-y-5">
+      {/* Kanban Overview */}
+      <KanbanOverview projects={projects} />
+
       <div className="flex justify-end">
         <button onClick={() => setShowCreate(true)} className="btn-primary !py-2 !px-4 text-subhead flex items-center gap-1.5">
           <Plus size={15} /> New
@@ -83,10 +127,13 @@ export default function AdminProjects() {
 
       {/* Filter */}
       <div className="flex gap-1.5 overflow-x-auto pb-1">
-        <button onClick={() => setFilter("")} className={`pill ${!filter ? "pill-active" : "pill-inactive"}`}>All</button>
-        {STATUSES.map(s => (
-          <button key={s} onClick={() => setFilter(s)} className={`pill ${filter === s ? "pill-active" : "pill-inactive"}`}>{s}</button>
-        ))}
+        <button onClick={() => setFilter("")} className={`pill ${!filter ? "pill-active" : "pill-inactive"}`}>All ({projects.length})</button>
+        {STATUSES.map(s => {
+          const count = projects.filter(p => p.status === s).length;
+          return (
+            <button key={s} onClick={() => setFilter(s)} className={`pill ${filter === s ? "pill-active" : "pill-inactive"}`}>{s} {count > 0 ? `(${count})` : ""}</button>
+          );
+        })}
       </div>
 
       {/* List */}
@@ -105,6 +152,12 @@ export default function AdminProjects() {
               <div className="flex items-center gap-2 mb-3">
                 <span className="badge badge-gray">{catLabel(p.category)}</span>
                 <span className={`text-caption font-semibold ${priorityColor[p.priority] || ""}`}>{p.priority}</span>
+                {p.startDate && p.endDate && (
+                  <span className="text-caption text-label-quaternary flex items-center gap-1">
+                    <Calendar size={9} />
+                    {new Date(p.startDate).toLocaleDateString("en-PK", { day: "numeric", month: "short" })} — {new Date(p.endDate).toLocaleDateString("en-PK", { day: "numeric", month: "short" })}
+                  </span>
+                )}
               </div>
 
               {/* Progress */}
@@ -119,6 +172,8 @@ export default function AdminProjects() {
                 <span>{p.totalTasks} tasks · {p.districts?.length || 0} districts</span>
                 <span>{p.createdBy?.name}</span>
               </div>
+
+              <BudgetBar budget={p.budget} spent={p.spentBudget} />
             </Link>
           ))}
         </div>
@@ -146,7 +201,7 @@ export default function AdminProjects() {
               </div>
               <div>
                 <label className="text-caption font-medium text-label-secondary mb-1 block">Title (Urdu)</label>
-                <input value={form.titleUrdu} onChange={e => setForm(p => ({ ...p, titleUrdu: e.target.value }))} className="input-field font-urdu" dir="rtl" placeholder="اردو عنوان" />
+                <input value={form.titleUrdu} onChange={e => setForm(p => ({ ...p, titleUrdu: e.target.value }))} className="input-field font-urdu" dir="rtl" placeholder="اعلان عنوان" />
               </div>
               <div>
                 <label className="text-caption font-medium text-label-secondary mb-1 block">Description</label>
