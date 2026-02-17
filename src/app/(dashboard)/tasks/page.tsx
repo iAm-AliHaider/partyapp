@@ -43,11 +43,11 @@ export default function MemberTasks() {
   const completedTasks = myTasks.filter(t => ["VERIFIED", "REJECTED"].includes(t.assignmentStatus));
   const currentTasks = tab === "active" ? activeTasks : completedTasks;
 
-  if (loading) return <div className="page-container"><div className="space-y-3 pt-8">{[1, 2, 3].map(i => <div key={i} className="skeleton h-24 rounded-apple-lg" />)}</div></div>;
+  if (loading) return <div className="px-5 py-4"><div className="space-y-3 pt-8">{[1, 2, 3].map(i => <div key={i} className="skeleton h-24 rounded-apple-lg" />)}</div></div>;
 
   return (
-    <div className="page-container">
-      <h1 className="text-title tracking-tight mb-2 pt-2">{t.tasks.title}</h1>
+    <div className="px-5 py-4">
+
       <p className="text-callout text-label-tertiary mb-6">{t.tasks.subtitle}</p>
 
       {/* Summary */}

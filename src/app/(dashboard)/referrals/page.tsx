@@ -45,11 +45,11 @@ export default function ReferralsPage() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
-  if (loading) return <div className="page-container"><div className="space-y-4 pt-8"><div className="skeleton h-64 rounded-apple-xl" /><div className="skeleton h-20 rounded-apple-lg" /></div></div>;
+  if (loading) return <div className="px-5 py-4"><div className="space-y-4 pt-8"><div className="skeleton h-64 rounded-apple-xl" /><div className="skeleton h-20 rounded-apple-lg" /></div></div>;
 
   return (
-    <div className="page-container">
-      <h1 className="text-title tracking-tight mb-6 pt-2">{t.referral.title}</h1>
+    <div className="px-5 py-4">
+
 
       {/* QR Share Card */}
       <div className="card mb-6">

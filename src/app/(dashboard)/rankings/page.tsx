@@ -51,8 +51,8 @@ export default function RankingsPage() {
   };
 
   return (
-    <div className="page-container">
-      <h1 className="text-title tracking-tight mb-6 pt-2">{t.rankings.title}</h1>
+    <div className="px-5 py-4">
+
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 bg-surface-tertiary p-1 rounded-apple-lg">

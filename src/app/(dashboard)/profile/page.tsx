@@ -43,7 +43,7 @@ export default function ProfilePage() {
     return `${cnic.slice(0, 5)}-${cnic.slice(5, 12)}-${cnic.slice(12)}`;
   };
 
-  if (!member) return <div className="page-container"><div className="space-y-4 pt-8"><div className="skeleton h-44 rounded-apple-xl" /><div className="skeleton h-48 rounded-apple-lg" /></div></div>;
+  if (!member) return <div className="px-5 py-4"><div className="space-y-4 pt-8"><div className="skeleton h-44 rounded-apple-xl" /><div className="skeleton h-48 rounded-apple-lg" /></div></div>;
 
   const memberLocation = [member.tehsil?.name, member.district?.name, member.province?.name].filter(Boolean).join(", ") || undefined;
 
@@ -59,8 +59,8 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="page-container">
-      <h1 className="text-title tracking-tight mb-6 pt-2">{t.profile.title}</h1>
+    <div className="px-5 py-4">
+
 
       <div className="mb-8">
         <MembershipCard name={member.name} membershipNumber={member.membershipNumber || "—"} partyName={member.party?.name || "Awaam Raaj"} location={memberLocation} referralCode={member.referralCode} score={member.score} joinDate={member.createdAt} />

@@ -32,7 +32,7 @@ export default function HomePage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="page-container">
+      <div className="px-5 py-2">
         <div className="space-y-4 pt-4">
           <div className="skeleton h-8 w-40" />
           <div className="skeleton h-44 rounded-apple-xl" />
@@ -50,7 +50,7 @@ export default function HomePage() {
     : [member?.tehsil?.name, member?.district?.name, member?.province?.name].filter(Boolean).join(", ") || undefined;
 
   return (
-    <div className="page-container">
+    <div className="px-5 py-2">
       {/* Header */}
       <div className="flex justify-between items-center mb-6 pt-2">
         <div>

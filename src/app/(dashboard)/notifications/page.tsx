@@ -56,16 +56,15 @@ export default function NotificationsPage() {
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
-  if (loading) return <div className="page-container"><div className="space-y-3 pt-8">{[1, 2, 3].map((i) => <div key={i} className="skeleton h-20 rounded-apple-lg" />)}</div></div>;
+  if (loading) return <div className="px-5 py-4"><div className="space-y-3 pt-8">{[1, 2, 3].map((i) => <div key={i} className="skeleton h-20 rounded-apple-lg" />)}</div></div>;
 
   return (
-    <div className="page-container">
-      <div className="flex justify-between items-center mb-6 pt-2">
-        <h1 className="text-title tracking-tight">{t.notifications.title}</h1>
-        {unreadCount > 0 && (
+    <div className="px-5 py-4">
+      {unreadCount > 0 && (
+        <div className="flex justify-end mb-4">
           <button onClick={markAllRead} className="btn-ghost text-subhead">{t.notifications.markAllRead}</button>
-        )}
-      </div>
+        </div>
+      )}
 
       {notifications.length > 0 ? (
         <div className="card-grouped">
