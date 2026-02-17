@@ -32,8 +32,8 @@ export default function HomePage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="px-5 py-2">
-        <div className="space-y-4 pt-4">
+      <div className="px-5 pt-3 pb-4">
+        <div className="space-y-4">
           <div className="skeleton h-8 w-40" />
           <div className="skeleton h-44 rounded-apple-xl" />
           <div className="grid grid-cols-2 gap-3">
@@ -50,9 +50,9 @@ export default function HomePage() {
     : [member?.tehsil?.name, member?.district?.name, member?.province?.name].filter(Boolean).join(", ") || undefined;
 
   return (
-    <div className="px-5 py-2">
+    <div className="px-5 pt-3 pb-4">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6 pt-2">
+      <div className="flex justify-between items-center mb-5">
         <div>
           <p className="text-subhead text-label-tertiary">{t.home.welcome}</p>
           <h1 className="text-title tracking-tight">{member?.name || t.home.dashboard}</h1>

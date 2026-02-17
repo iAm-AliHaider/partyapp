@@ -19,21 +19,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: "/profile", label: t.nav.profile, icon: "profile" as const },
   ];
 
-  // Determine current page title
   const activeTab = tabs.find(
     (tab) => pathname === tab.href || pathname?.startsWith(tab.href + "/")
   );
   const isNotifications = pathname === "/notifications";
   const pageTitle = isNotifications ? (t.notifications?.title || "Notifications") : activeTab?.label || "";
 
-  // Pages that manage their own header (home has the welcome + name)
+  // Home manages its own header (welcome + name + language toggle)
   const selfHeaderPages = ["/home"];
   const showHeader = !selfHeaderPages.includes(pathname || "");
 
   return (
     <div className="fixed inset-0 flex flex-col bg-surface-secondary">
       {/* ─── Fixed Header ─── */}
-      {showHeader && (
+      {showHeader ? (
         <header className="flex-shrink-0 glass border-b border-separator/50 z-30">
           <div className="notch-header px-5 pb-3">
             <div className="flex items-center justify-between">
@@ -47,11 +46,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
+      ) : (
+        /* Safe area spacer for pages without header (notch protection) */
+        <div className="flex-shrink-0 safe-area-top" />
       )}
 
       {/* ─── Scrollable Content ─── */}
       <main className="flex-1 overflow-y-auto overscroll-contain">
-        <div className="max-w-lg mx-auto">{children}</div>
+        <div className="max-w-lg mx-auto pb-4">{children}</div>
       </main>
 
       {/* ─── Fixed Bottom Tab Bar ─── */}
