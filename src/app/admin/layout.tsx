@@ -3,21 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, Users, FolderKanban, Megaphone, MapPin, Zap, ArrowLeft,
+  BarChart3, Users, FolderKanban, Megaphone, MapPin, Zap, ArrowLeft, ClipboardCheck,
 } from "lucide-react";
 
 const tabs = [
   { href: "/admin", label: "Dashboard", icon: BarChart3 },
   { href: "/admin/members", label: "Members", icon: Users },
-  { href: "/admin/projects", label: "Projects", icon: FolderKanban },
+  { href: "/admin/tasks", label: "Tasks", icon: ClipboardCheck },
   { href: "/admin/announcements", label: "Announce", icon: Megaphone },
   { href: "/admin/constituencies", label: "Districts", icon: MapPin },
+  { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/ai", label: "AI", icon: Zap },
 ];
 
 function getActiveTab(pathname: string | null) {
   if (!pathname) return tabs[0];
-  // Exact match first, then prefix match (skip /admin itself for prefix)
   const exact = tabs.find((t) => t.href === pathname);
   if (exact) return exact;
   return tabs.find((t) => t.href !== "/admin" && pathname.startsWith(t.href)) || tabs[0];
@@ -55,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ─── Fixed Bottom Tab Bar ─── */}
       <nav className="flex-shrink-0 glass border-t border-separator/50 z-30 safe-area-bottom">
-        <div className="flex items-stretch justify-around px-2 pt-1.5 pb-1">
+        <div className="flex items-stretch justify-around px-1 pt-1.5 pb-1">
           {tabs.map((tab) => {
             const isActive =
               tab.href === pathname ||
@@ -65,13 +65,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`flex flex-col items-center gap-0.5 py-1 px-1 min-w-0 flex-1 transition-colors ${
+                className={`flex flex-col items-center gap-0.5 py-1 px-0.5 min-w-0 flex-1 transition-colors ${
                   isActive ? "text-accent" : "text-label-tertiary"
                 }`}
               >
-                <Icon size={22} strokeWidth={isActive ? 2.2 : 1.6} />
+                <Icon size={20} strokeWidth={isActive ? 2.2 : 1.6} />
                 <span
-                  className={`text-[10px] leading-tight truncate ${
+                  className={`text-[9px] leading-tight truncate ${
                     isActive ? "font-semibold" : "font-medium"
                   }`}
                 >
