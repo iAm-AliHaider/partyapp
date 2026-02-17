@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
@@ -183,7 +183,7 @@ export default function AdminDashboard() {
             <div className="card bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-100">
               <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-wide">Coverage</p>
               <p className="text-3xl font-extrabold text-amber-600 mt-1">{o.coveragePercent}%</p>
-              <p className="text-[10px] text-gray-400 mt-1">{o.coveredDistricts}/{o.totalDistricts} districts</p>
+              <p className="text-[10px] text-gray-400 mt-1">{o.coveredTehsils}/{o.totalTehsils} tehsils</p>
             </div>
           </div>
 
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
               <p className="text-lg">👥</p>
               <p className="text-[10px] font-semibold text-gray-600 mt-1">Members</p>
             </Link>
-            <Link href="/admin/districts" className="card text-center py-3 active:bg-red-50 transition-colors">
+            <Link href="/admin/constituencies" className="card text-center py-3 active:bg-red-50 transition-colors">
               <p className="text-lg">🗺️</p>
               <p className="text-[10px] font-semibold text-gray-600 mt-1">districts</p>
             </Link>
@@ -322,7 +322,7 @@ export default function AdminDashboard() {
             <h2 className="text-sm font-bold text-gray-800 mb-4">🏛️ Provincial Breakdown</h2>
             <div className="space-y-3">
               {prov.map((p: any) => {
-                const pct = p.totalDistricts > 0 ? Math.round((p.coveredDistricts / p.totalDistricts) * 100) : 0;
+                const pct = p.tehsils > 0 ? Math.round((p.coveredTehsils / p.tehsils) * 100) : 0;
                 return (
                   <div key={p.type}>
                     <div className="flex justify-between items-center mb-1">
@@ -338,7 +338,7 @@ export default function AdminDashboard() {
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full rounded-full bg-gradient-to-r from-party-red to-party-gold transition-all" style={{ width: `${pct}%` }} />
                     </div>
-                    <p className="text-[9px] text-gray-400 mt-0.5">{p.coveredDistricts}/{p.totalDistricts} districts covered ({pct}%)</p>
+                    <p className="text-[9px] text-gray-400 mt-0.5">{p.coveredTehsils}/{p.tehsils} tehsils covered ({pct}%)</p>
                   </div>
                 );
               })}

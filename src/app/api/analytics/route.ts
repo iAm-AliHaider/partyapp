@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       const weekAgo = new Date(now.getTime() - 7 * 86400000);
       const monthAgo = new Date(now.getTime() - 30 * 86400000);
 
-      const [total, active, pending, suspended, newToday, newWeek, newMonth, referrals, totalDistricts] = await Promise.all([
+      const [total, active, pending, suspended, newToday, newWeek, newMonth, referrals, totalTehsils] = await Promise.all([
         prisma.member.count(),
         prisma.member.count({ where: { status: "ACTIVE" } }),
         prisma.member.count({ where: { status: "PENDING" } }),
@@ -24,20 +24,20 @@ export async function GET(req: NextRequest) {
         prisma.member.count({ where: { createdAt: { gte: weekAgo } } }),
         prisma.member.count({ where: { createdAt: { gte: monthAgo } } }),
         prisma.referral.count({ where: { status: "VERIFIED" } }),
-        prisma.district.count(),
+        prisma.tehsil.count(),
       ]);
 
       const covered = await prisma.member.groupBy({
-        by: ["districtId"],
-        where: { districtId: { not: null }, status: "ACTIVE" },
+        by: ["tehsilId"],
+        where: { tehsilId: { not: null }, status: "ACTIVE" },
       });
 
       result.overview = {
         total, active, pending, suspended,
         newToday, newWeek, newMonth,
-        referrals, totalDistricts,
-        coveredDistricts: covered.length,
-        coveragePercent: totalDistricts > 0 ? Math.round((covered.length / totalDistricts) * 100) : 0,
+        referrals, totalTehsils,
+        coveredTehsils: covered.length,
+        coveragePercent: totalTehsils > 0 ? Math.round((covered.length / totalTehsils) * 100) : 0,
       };
     }
 
@@ -90,9 +90,14 @@ export async function GET(req: NextRequest) {
     // ── Provincial Breakdown ──
     if (section === "all" || section === "provincial") {
       const byProvince = await prisma.$queryRaw<any[]>`
-        SELECT p.name, p.id, COUNT(DISTINCT m.id)::int AS members, COUNT(DISTINCT d.id)::int AS districts
+        SELECT p.name, p.id,
+          COUNT(DISTINCT m.id)::int AS members,
+          COUNT(DISTINCT d.id)::int AS districts,
+          COUNT(DISTINCT t.id)::int AS tehsils,
+          COUNT(DISTINCT CASE WHEN m.tehsil_id IS NOT NULL THEN m.tehsil_id END)::int AS covered_tehsils
         FROM provinces p
         LEFT JOIN districts d ON d.province_id = p.id
+        LEFT JOIN tehsils t ON t.district_id = d.id
         LEFT JOIN members m ON m.district_id = d.id AND m.status = 'ACTIVE'
         GROUP BY p.id, p.name
         ORDER BY members DESC
@@ -103,6 +108,8 @@ export async function GET(req: NextRequest) {
         name: b.name,
         members: b.members,
         districts: b.districts,
+        tehsils: b.tehsils,
+        coveredTehsils: b.covered_tehsils,
       }));
     }
 
