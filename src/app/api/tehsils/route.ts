@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
         id: true,
         name: true,
         nameUrdu: true,
+        _count: { select: { members: true } },
       },
       orderBy: { name: "asc" },
     });
