@@ -609,3 +609,14 @@ model SocialAccount {
 
   @@map("social_accounts")
 }
+
+model BridgeStatus {
+  id              String   @id @default("singleton")
+  online          Boolean  @default(false)
+  deviceConnected Boolean  @default(false) @map("device_connected")
+  activeGoal      String?  @map("active_goal")
+  lastHeartbeat   DateTime @default(now()) @map("last_heartbeat")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("bridge_status")
+}

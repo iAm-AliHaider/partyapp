@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
 const API_KEY = process.env.AGENT_API_KEY || "siyasat-agent-key-2026";
-
-// In-memory heartbeat tracker (resets on cold start)
-let lastHeartbeat: Date | null = null;
 
 // POST /api/droidclaw/bridge-status — bridge pings this
 export async function POST(req: NextRequest) {
@@ -11,23 +9,50 @@ export async function POST(req: NextRequest) {
   if (key !== API_KEY) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  lastHeartbeat = new Date();
+
+  const status = await prisma.bridgeStatus.upsert({
+    where: { id: "singleton" },
+    update: {
+      online: true,
+      deviceConnected: body.deviceConnected ?? false,
+      activeGoal: body.activeGoal ?? null,
+      lastHeartbeat: new Date(),
+    },
+    create: {
+      id: "singleton",
+      online: true,
+      deviceConnected: body.deviceConnected ?? false,
+      activeGoal: body.activeGoal ?? null,
+      lastHeartbeat: new Date(),
+    },
+  });
 
   return NextResponse.json({
     ok: true,
-    receivedAt: lastHeartbeat.toISOString(),
-    deviceConnected: body.deviceConnected ?? false,
-    activeGoal: body.activeGoal ?? null,
+    receivedAt: status.lastHeartbeat.toISOString(),
+    deviceConnected: status.deviceConnected,
+    activeGoal: status.activeGoal,
   });
 }
 
 // GET /api/droidclaw/bridge-status — admin UI checks this
-export async function GET(req: NextRequest) {
-  const isOnline = lastHeartbeat && (Date.now() - lastHeartbeat.getTime()) < 90_000; // 90s tolerance
+export async function GET() {
+  const status = await prisma.bridgeStatus.findUnique({
+    where: { id: "singleton" },
+  });
+
+  if (!status) {
+    return NextResponse.json({ online: false, lastHeartbeat: null, staleSeconds: null });
+  }
+
+  const staleSeconds = Math.floor((Date.now() - status.lastHeartbeat.getTime()) / 1000);
+  const isOnline = staleSeconds < 90; // 90s tolerance
 
   return NextResponse.json({
-    online: !!isOnline,
-    lastHeartbeat: lastHeartbeat?.toISOString() ?? null,
-    staleSeconds: lastHeartbeat ? Math.floor((Date.now() - lastHeartbeat.getTime()) / 1000) : null,
+    online: isOnline,
+    deviceConnected: status.deviceConnected,
+    activeGoal: status.activeGoal,
+    lastHeartbeat: status.lastHeartbeat.toISOString(),
+    staleSeconds,
   });
 }
