@@ -58,6 +58,8 @@ export default function ProfilePage() {
     return <div className="page-container"><div className="animate-pulse space-y-4"><div className="h-48 bg-gray-200 rounded-2xl" /><div className="h-32 bg-gray-200 rounded-xl" /></div></div>;
   }
 
+  const memberLocation = [member.tehsil?.name, member.district?.name, member.province?.name].filter(Boolean).join(", ") || undefined;
+
   return (
     <div className="page-container">
       <h1 className="text-xl font-bold mb-6">{t.profile.title}</h1>
@@ -67,7 +69,7 @@ export default function ProfilePage() {
           name={member.name}
           membershipNumber={member.membershipNumber || "—"}
           partyName={member.party?.name || "Awaam Raaj"}
-          constituencyCode={member.constituency?.code || "—"}
+          location={memberLocation}
           referralCode={member.referralCode}
           score={member.score}
           joinDate={new Date(member.createdAt).getFullYear().toString()}
@@ -113,7 +115,7 @@ export default function ProfilePage() {
             <div className="flex justify-between"><span className="text-sm text-gray-500">{t.profile.phone}</span><span className="text-sm font-mono">{member.phone}</span></div>
             <div className="flex justify-between"><span className="text-sm text-gray-500">{t.profile.email}</span><span className="text-sm">{member.email || "—"}</span></div>
             <div className="flex justify-between"><span className="text-sm text-gray-500">{t.profile.gender}</span><span className="text-sm">{member.gender || "—"}</span></div>
-            <div className="flex justify-between"><span className="text-sm text-gray-500">{t.profile.constituency}</span><span className="text-sm font-medium">{member.constituency ? `${member.constituency.code}` : "—"}</span></div>
+            <div className="flex justify-between"><span className="text-sm text-gray-500">{t.profile.district}</span><span className="text-sm font-medium">{member.district?.name || "—"}</span></div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-500">{t.profile.status}</span>
               <span className={`text-xs px-2 py-0.5 rounded-full ${member.status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>{member.status}</span>

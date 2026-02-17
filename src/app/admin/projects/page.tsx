@@ -29,13 +29,13 @@ export default function AdminProjects() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [filter, setFilter] = useState("");
-  const [constituencies, setConstituencies] = useState<any[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
 
   // Create form
   const [form, setForm] = useState({
     title: "", titleUrdu: "", description: "", category: "CAMPAIGN",
     priority: "MEDIUM", startDate: "", endDate: "", budget: "",
-    targetVotes: "", targetMembers: "", constituencyIds: [] as string[],
+    targetVotes: "", targetMembers: "", districtIds: [] as string[],
   });
   const [creating, setCreating] = useState(false);
 
@@ -45,7 +45,7 @@ export default function AdminProjects() {
       const role = (session?.user as any)?.role;
       if (!["ADMIN", "OWNER"].includes(role)) router.push("/home");
       loadProjects();
-      fetch("/api/constituencies").then(r => r.json()).then(d => setConstituencies(d.constituencies || []));
+      fetch("/api/districts").then(r => r.json()).then(d => setDistricts(d.districts || []));
     }
   }, [authStatus, session, router]);
 
@@ -76,17 +76,10 @@ export default function AdminProjects() {
     });
     if (res.ok) {
       setShowCreate(false);
-      setForm({ title: "", titleUrdu: "", description: "", category: "CAMPAIGN", priority: "MEDIUM", startDate: "", endDate: "", budget: "", targetVotes: "", targetMembers: "", constituencyIds: [] });
+      setForm({ title: "", titleUrdu: "", description: "", category: "CAMPAIGN", priority: "MEDIUM", startDate: "", endDate: "", budget: "", targetVotes: "", targetMembers: "", districtIds: [] });
       loadProjects();
     }
     setCreating(false);
-  };
-
-  const updateStatus = async (id: string, status: string) => {
-    await fetch(`/api/projects/${id}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }),
-    });
-    loadProjects();
   };
 
   const catInfo = (key: string) => CATEGORIES.find(c => c.key === key) || CATEGORIES[CATEGORIES.length - 1];
@@ -101,12 +94,12 @@ export default function AdminProjects() {
     return m[p] || "";
   };
 
-  const toggleConstituency = (id: string) => {
+  const toggleDistrict = (id: string) => {
     setForm(prev => ({
       ...prev,
-      constituencyIds: prev.constituencyIds.includes(id)
-        ? prev.constituencyIds.filter(c => c !== id)
-        : [...prev.constituencyIds, id],
+      districtIds: prev.districtIds.includes(id)
+        ? prev.districtIds.filter(d => d !== id)
+        : [...prev.districtIds, id],
     }));
   };
 
@@ -154,7 +147,7 @@ export default function AdminProjects() {
               </div>
 
               <div className="flex justify-between text-[10px] text-gray-400">
-                <span>{p.totalTasks} tasks • {p.constituencies?.length || 0} constituencies</span>
+                <span>{p.totalTasks} tasks • {p.districts?.length || 0} districts</span>
                 <span>{p.createdBy?.name}</span>
               </div>
             </Link>
@@ -232,15 +225,15 @@ export default function AdminProjects() {
                 </div>
               </div>
 
-              {/* Constituency selector */}
+              {/* District selector */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">Target Constituencies ({form.constituencyIds.length} selected)</label>
+                <label className="text-xs font-semibold text-gray-600">Target Districts ({form.districtIds.length} selected)</label>
                 <div className="max-h-32 overflow-y-auto mt-1 border rounded-xl divide-y">
-                  {constituencies.slice(0, 50).map((c: any) => (
-                    <button key={c.id} type="button" onClick={() => toggleConstituency(c.id)}
-                      className={`w-full text-left px-3 py-1.5 text-xs flex justify-between ${form.constituencyIds.includes(c.id) ? "bg-party-red/5" : ""}`}>
-                      <span>{c.code} — {c.name}</span>
-                      {form.constituencyIds.includes(c.id) && <span className="text-party-red">✓</span>}
+                  {districts.map((d: any) => (
+                    <button key={d.id} type="button" onClick={() => toggleDistrict(d.id)}
+                      className={`w-full text-left px-3 py-1.5 text-xs flex justify-between ${form.districtIds.includes(d.id) ? "bg-party-red/5" : ""}`}>
+                      <span>{d.name} — {d.province?.name} ({d._count?.members || 0})</span>
+                      {form.districtIds.includes(d.id) && <span className="text-party-red">✓</span>}
                     </button>
                   ))}
                 </div>

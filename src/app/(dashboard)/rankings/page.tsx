@@ -12,23 +12,37 @@ export default function RankingsPage() {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("national");
   const [entries, setEntries] = useState<any[]>([]);
-  const [constituencies, setConstituencies] = useState<any[]>([]);
-  const [selectedConstituency, setSelectedConstituency] = useState("");
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === "unauthenticated") { router.push("/login"); return; }
-    fetch("/api/constituencies").then((r) => r.json()).then((data) => {
-      setConstituencies(data.constituencies || []);
+    fetch("/api/provinces").then((r) => r.json()).then((data) => {
+      setProvinces(data.provinces || []);
     });
     fetchRankings("national");
   }, [status, router]);
 
-  const fetchRankings = async (type: string, constituencyId?: string) => {
+  // Load districts when province changes
+  useEffect(() => {
+    if (selectedProvince) {
+      fetch(`/api/districts?provinceId=${selectedProvince}`).then((r) => r.json()).then((data) => {
+        setDistricts(data.districts || []);
+      });
+    } else {
+      setDistricts([]);
+    }
+    setSelectedDistrict("");
+  }, [selectedProvince]);
+
+  const fetchRankings = async (type: string, districtId?: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ type });
-      if (constituencyId) params.set("constituencyId", constituencyId);
+      if (districtId) params.set("districtId", districtId);
       const res = await fetch(`/api/rankings?${params}`);
       const data = await res.json();
       setEntries(data.leaderboard || []);
@@ -42,18 +56,18 @@ export default function RankingsPage() {
     setActiveTab(tab);
     if (tab === "national") {
       fetchRankings("national");
-    } else if (selectedConstituency) {
-      fetchRankings("constituency", selectedConstituency);
+    } else if (selectedDistrict) {
+      fetchRankings("district", selectedDistrict);
     }
   };
 
-  const handleConstituencyChange = (id: string) => {
-    setSelectedConstituency(id);
-    if (id) fetchRankings("constituency", id);
+  const handleDistrictChange = (id: string) => {
+    setSelectedDistrict(id);
+    if (id) fetchRankings("district", id);
   };
 
   const TABS = [
-    { key: "constituency", label: t.rankings.myConstituency },
+    { key: "district", label: t.rankings.myDistrict || "My District" },
     { key: "national", label: t.rankings.national },
   ];
 
@@ -70,14 +84,23 @@ export default function RankingsPage() {
         ))}
       </div>
 
-      {activeTab === "constituency" && (
-        <div className="mb-4">
-          <select value={selectedConstituency} onChange={(e) => handleConstituencyChange(e.target.value)} className="input-field text-sm">
-            <option value="">{t.rankings.selectConstituency}</option>
-            {constituencies.map((c: any) => (
-              <option key={c.id} value={c.id}>{c.code} — {c.name} ({c._count?.members || 0})</option>
+      {activeTab === "district" && (
+        <div className="space-y-3 mb-4">
+          <select value={selectedProvince} onChange={(e) => setSelectedProvince(e.target.value)} className="input-field text-sm">
+            <option value="">{t.rankings.selectProvince || "Select Province"}</option>
+            {provinces.map((p: any) => (
+              <option key={p.id} value={p.id}>{p.name} {p.nameUrdu ? `(${p.nameUrdu})` : ""}</option>
             ))}
           </select>
+
+          {districts.length > 0 && (
+            <select value={selectedDistrict} onChange={(e) => handleDistrictChange(e.target.value)} className="input-field text-sm">
+              <option value="">{t.rankings.selectDistrict || "Select District"}</option>
+              {districts.map((d: any) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          )}
         </div>
       )}
 
@@ -92,9 +115,9 @@ export default function RankingsPage() {
           <p className="text-4xl mb-3">🏆</p>
           <p className="font-medium">{t.rankings.noRankings}</p>
           <p className="text-xs mt-1">
-            {activeTab === "constituency" && !selectedConstituency
-              ? t.rankings.selectToView
-              : t.rankings.rankingsComputed}
+            {activeTab === "district" && !selectedDistrict
+              ? (t.rankings.selectToView || "Select a district to view rankings")
+              : (t.rankings.rankingsComputed)}
           </p>
         </div>
       )}

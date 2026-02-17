@@ -13,12 +13,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     where: { id },
     include: {
       createdBy: { select: { name: true, membershipNumber: true } },
-      constituencies: { include: { constituency: { select: { code: true, name: true, type: true } } } },
+      districts: { include: { district: { select: { name: true, province: { select: { name: true } } } } } },
+      provinces: { include: { province: { select: { name: true } } } },
       tasks: {
         orderBy: { createdAt: "asc" },
         include: {
           assignments: {
-            include: { member: { select: { id: true, name: true, membershipNumber: true, constituency: { select: { code: true } } } } },
+            include: { member: { select: { id: true, name: true, membershipNumber: true, district: { select: { name: true } } } } },
           },
         },
       },
@@ -37,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { id } = params;
   const body = await req.json();
-  const { title, titleUrdu, description, category, priority, status, startDate, endDate, budget, targetVotes, targetMembers, constituencyIds } = body;
+  const { title, titleUrdu, description, category, priority, status, startDate, endDate, budget, targetVotes, targetMembers, districtIds } = body;
 
   const data: any = {};
   if (title !== undefined) data.title = title;
@@ -52,12 +53,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (targetVotes !== undefined) data.targetVotes = targetVotes;
   if (targetMembers !== undefined) data.targetMembers = targetMembers;
 
-  // Update constituency links if provided
-  if (constituencyIds) {
-    await prisma.projectConstituency.deleteMany({ where: { projectId: id } });
-    if (constituencyIds.length > 0) {
-      await prisma.projectConstituency.createMany({
-        data: constituencyIds.map((cId: string) => ({ projectId: id, constituencyId: cId })),
+  // Update district links if provided
+  if (districtIds) {
+    await prisma.projectDistrict.deleteMany({ where: { projectId: id } });
+    if (districtIds.length > 0) {
+      await prisma.projectDistrict.createMany({
+        data: districtIds.map((dId: string) => ({ projectId: id, districtId: dId })),
       });
     }
   }
@@ -66,7 +67,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     where: { id },
     data,
     include: {
-      constituencies: { include: { constituency: { select: { code: true } } } },
+      districts: { include: { district: { select: { name: true } } } },
       createdBy: { select: { name: true } },
     },
   });
@@ -83,4 +84,3 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   await prisma.project.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }
-

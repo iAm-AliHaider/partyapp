@@ -2,22 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 
-// POST /api/projects/:id/tasks — create task + assign to members/constituency
+// POST /api/projects/:id/tasks — create task + assign to members by district
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Admin only" }, { status: 403 });
 
   const { id: projectId } = params;
   const body = await req.json();
-  const { title, titleUrdu, description, type, priority, dueDate, points, memberIds, constituencyId } = body;
+  const { title, titleUrdu, description, type, priority, dueDate, points, memberIds, districtId, tehsilId } = body;
 
   if (!title) return NextResponse.json({ error: "Title required" }, { status: 400 });
 
-  // If constituencyId is provided, assign to all active members in that constituency
+  // If districtId is provided, assign to all active members in that district (optionally by tehsil)
   let assignToIds: string[] = memberIds || [];
-  if (constituencyId && !memberIds?.length) {
+  if (districtId && !memberIds?.length) {
+    const where: any = { districtId, status: "ACTIVE" };
+    if (tehsilId) where.tehsilId = tehsilId;
     const members = await prisma.member.findMany({
-      where: { constituencyId, status: "ACTIVE" },
+      where,
       select: { id: true },
     });
     assignToIds = members.map((m) => m.id);
@@ -57,4 +59,3 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   return NextResponse.json(task, { status: 201 });
 }
-

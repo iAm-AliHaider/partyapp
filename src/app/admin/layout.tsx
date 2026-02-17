@@ -8,7 +8,7 @@ const adminTabs = [
   { href: "/admin/members", label: "Members", icon: "👥" },
   { href: "/admin/projects", label: "Projects", icon: "📋" },
   { href: "/admin/announcements", label: "Announce", icon: "📢" },
-  { href: "/admin/constituencies", label: "Areas", icon: "🗺️" },
+  { href: "/admin/constituencies", label: "Districts", icon: "🗺️" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

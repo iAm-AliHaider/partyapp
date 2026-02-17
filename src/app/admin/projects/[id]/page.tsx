@@ -50,14 +50,14 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
   // Task state
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAssign, setShowAssign] = useState<string | null>(null);
-  const [assignConstId, setAssignConstId] = useState("");
-  const [constituencies, setConstituencies] = useState<any[]>([]);
+  const [assignDistrictId, setAssignDistrictId] = useState("");
+  const [districts, setDistricts] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
   const [taskForm, setTaskForm] = useState({
     title: "", titleUrdu: "", description: "", type: "GENERAL",
     priority: "MEDIUM", dueDate: "", points: "0",
-    constituencyId: "", memberIds: [] as string[],
+    districtId: "", memberIds: [] as string[],
   });
   const [creating, setCreating] = useState(false);
 
@@ -76,7 +76,7 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
       if (!["ADMIN", "OWNER"].includes(role)) router.push("/home");
       loadProject();
       loadDocuments();
-      fetch("/api/constituencies").then(r => r.json()).then(d => setConstituencies(d.constituencies || []));
+      fetch("/api/districts").then(r => r.json()).then(d => setDistricts(d.districts || []));
       fetch("/api/members").then(r => r.json()).then(d => setMembers(Array.isArray(d) ? d : d.members || []));
     }
   }, [authStatus, session, router, id]);
@@ -115,14 +115,14 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
       points: parseInt(taskForm.points) || 0,
     };
     if (taskForm.memberIds.length) payload.memberIds = taskForm.memberIds;
-    else if (taskForm.constituencyId) payload.constituencyId = taskForm.constituencyId;
+    else if (taskForm.districtId) payload.districtId = taskForm.districtId;
 
     const r = await fetch(`/api/projects/${id}/tasks`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
     });
     if (r.ok) {
       setShowAddTask(false);
-      setTaskForm({ title: "", titleUrdu: "", description: "", type: "GENERAL", priority: "MEDIUM", dueDate: "", points: "0", constituencyId: "", memberIds: [] });
+      setTaskForm({ title: "", titleUrdu: "", description: "", type: "GENERAL", priority: "MEDIUM", dueDate: "", points: "0", districtId: "", memberIds: [] });
       loadProject();
     } else {
       const err = await r.json();
@@ -146,17 +146,17 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
   };
 
   const assignTask = async (taskId: string) => {
-    if (!assignConstId) { alert("Select a constituency"); return; }
+    if (!assignDistrictId) { alert("Select a district"); return; }
     const r = await fetch(`/api/tasks/${taskId}/assign`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ constituencyId: assignConstId }),
+      body: JSON.stringify({ districtId: assignDistrictId }),
     });
     if (r.ok) {
       const d = await r.json();
       alert(`Assigned to ${d.assigned} members (${d.skipped} already assigned)`);
     }
     setShowAssign(null);
-    setAssignConstId("");
+    setAssignDistrictId("");
     loadProject();
   };
 
@@ -250,10 +250,10 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
           <span>👤 {p.createdBy?.name}</span>
         </div>
 
-        {p.constituencies?.length > 0 && (
+        {p.districts?.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {p.constituencies.map((pc: any) => (
-              <span key={pc.id} className="text-[9px] bg-party-red/10 text-party-red px-1.5 py-0.5 rounded font-semibold">{pc.constituency.code}</span>
+            {p.districts.map((pd: any) => (
+              <span key={pd.id} className="text-[9px] bg-party-red/10 text-party-red px-1.5 py-0.5 rounded font-semibold">{pd.district.name}</span>
             ))}
           </div>
         )}
@@ -308,7 +308,7 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px]">{ASSIGN_STATUS_ICONS[a.status]}</span>
                           <span className="text-[10px] font-medium">{a.member.name}</span>
-                          <span className="text-[9px] text-gray-400">{a.member.constituency?.code}</span>
+                          <span className="text-[9px] text-gray-400">{a.member.district?.name}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="text-[9px] text-gray-400">{a.status}</span>
@@ -326,18 +326,18 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
 
                 {/* Actions */}
                 <div className="flex gap-2 ml-5">
-                  <button onClick={() => { setShowAssign(showAssign === t.id ? null : t.id); setAssignConstId(""); }} className="text-[10px] text-blue-500 font-semibold">+ Assign</button>
+                  <button onClick={() => { setShowAssign(showAssign === t.id ? null : t.id); setAssignDistrictId(""); }} className="text-[10px] text-blue-500 font-semibold">+ Assign</button>
                   <button onClick={() => deleteTask(t.id)} className="text-[10px] text-red-400 font-semibold">Delete</button>
                 </div>
 
                 {/* Inline assign */}
                 {showAssign === t.id && (
                   <div className="ml-5 mt-2 p-2 bg-blue-50 rounded-lg space-y-2">
-                    <select value={assignConstId} onChange={e => setAssignConstId(e.target.value)} className="input-field text-xs">
-                      <option value="">Select constituency (all members)...</option>
-                      {constituencies.map((c: any) => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
+                    <select value={assignDistrictId} onChange={e => setAssignDistrictId(e.target.value)} className="input-field text-xs">
+                      <option value="">Select district (all members)...</option>
+                      {districts.map((d: any) => <option key={d.id} value={d.id}>{d.name} — {d.province?.name} ({d._count?.members || 0})</option>)}
                     </select>
-                    <button onClick={() => assignTask(t.id)} className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg font-semibold w-full">Assign Constituency</button>
+                    <button onClick={() => assignTask(t.id)} className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg font-semibold w-full">Assign District</button>
                   </div>
                 )}
               </div>
@@ -363,7 +363,6 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
                 const catLabel = DOC_CATEGORIES.find(c => c.key === doc.category)?.label || "📄";
                 return (
                   <div key={doc.id} className="card flex gap-3">
-                    {/* Thumbnail */}
                     <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
                       {isImage ? (
                         <img src={doc.url} alt="" className="w-full h-full object-cover" />
@@ -472,17 +471,17 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
                 <input type="date" value={taskForm.dueDate} onChange={e => setTaskForm(p => ({ ...p, dueDate: e.target.value }))} className="input-field mt-1 text-xs" />
               </div>
 
-              {/* Assign to constituency */}
+              {/* Assign to district */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">Assign to Constituency</label>
-                <select value={taskForm.constituencyId} onChange={e => setTaskForm(p => ({ ...p, constituencyId: e.target.value, memberIds: [] }))} className="input-field mt-1 text-xs">
+                <label className="text-xs font-semibold text-gray-600">Assign to District</label>
+                <select value={taskForm.districtId} onChange={e => setTaskForm(p => ({ ...p, districtId: e.target.value, memberIds: [] }))} className="input-field mt-1 text-xs">
                   <option value="">— None (assign individually) —</option>
-                  {constituencies.map((c: any) => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
+                  {districts.map((d: any) => <option key={d.id} value={d.id}>{d.name} — {d.province?.name} ({d._count?.members || 0})</option>)}
                 </select>
               </div>
 
               {/* Or assign to specific members */}
-              {!taskForm.constituencyId && (
+              {!taskForm.districtId && (
                 <div>
                   <label className="text-xs font-semibold text-gray-600">Or Assign Members ({taskForm.memberIds.length})</label>
                   <input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} className="input-field mt-1 text-xs" placeholder="🔍 Search..." />
@@ -508,4 +507,3 @@ export default function ProjectDetail({ params }: { params: { id: string } }) {
     </div>
   );
 }
-

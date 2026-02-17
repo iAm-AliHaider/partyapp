@@ -112,7 +112,7 @@ export default function AdminDashboard() {
   const computeRankings = async () => {
     const res = await fetch("/api/rankings/compute", { method: "POST" });
     const d = await res.json();
-    alert(`Rankings computed for ${d.computed} constituencies`);
+    alert(`Rankings computed for ${d.computed} districts`);
   };
 
   if (loading) {
@@ -127,7 +127,7 @@ export default function AdminDashboard() {
   const demo = data?.demographics || {};
   const prov = data?.provincial || [];
   const growth = data?.growth || [];
-  const topConst = data?.topConstituencies || [];
+  const topConst = data?.topdistricts || [];
   const topRec = data?.topRecruiters || [];
   const refStats = data?.referralStats || {};
   const roles = data?.roles || [];
@@ -183,7 +183,7 @@ export default function AdminDashboard() {
             <div className="card bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-100">
               <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-wide">Coverage</p>
               <p className="text-3xl font-extrabold text-amber-600 mt-1">{o.coveragePercent}%</p>
-              <p className="text-[10px] text-gray-400 mt-1">{o.coveredConstituencies}/{o.totalConstituencies} constituencies</p>
+              <p className="text-[10px] text-gray-400 mt-1">{o.coveredDistricts}/{o.totalDistricts} districts</p>
             </div>
           </div>
 
@@ -225,9 +225,9 @@ export default function AdminDashboard() {
               <p className="text-lg">👥</p>
               <p className="text-[10px] font-semibold text-gray-600 mt-1">Members</p>
             </Link>
-            <Link href="/admin/constituencies" className="card text-center py-3 active:bg-red-50 transition-colors">
+            <Link href="/admin/districts" className="card text-center py-3 active:bg-red-50 transition-colors">
               <p className="text-lg">🗺️</p>
-              <p className="text-[10px] font-semibold text-gray-600 mt-1">Constituencies</p>
+              <p className="text-[10px] font-semibold text-gray-600 mt-1">districts</p>
             </Link>
           </div>
 
@@ -322,7 +322,7 @@ export default function AdminDashboard() {
             <h2 className="text-sm font-bold text-gray-800 mb-4">🏛️ Provincial Breakdown</h2>
             <div className="space-y-3">
               {prov.map((p: any) => {
-                const pct = p.totalConstituencies > 0 ? Math.round((p.coveredConstituencies / p.totalConstituencies) * 100) : 0;
+                const pct = p.totalDistricts > 0 ? Math.round((p.coveredDistricts / p.totalDistricts) * 100) : 0;
                 return (
                   <div key={p.type}>
                     <div className="flex justify-between items-center mb-1">
@@ -338,16 +338,16 @@ export default function AdminDashboard() {
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full rounded-full bg-gradient-to-r from-party-red to-party-gold transition-all" style={{ width: `${pct}%` }} />
                     </div>
-                    <p className="text-[9px] text-gray-400 mt-0.5">{p.coveredConstituencies}/{p.totalConstituencies} constituencies covered ({pct}%)</p>
+                    <p className="text-[9px] text-gray-400 mt-0.5">{p.coveredDistricts}/{p.totalDistricts} districts covered ({pct}%)</p>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Top Constituencies */}
+          {/* Top districts */}
           <div className="card">
-            <h2 className="text-sm font-bold text-gray-800 mb-3">🔥 Top Constituencies</h2>
+            <h2 className="text-sm font-bold text-gray-800 mb-3">🔥 Top districts</h2>
             {topConst.length > 0 ? (
               <div className="space-y-2">
                 {topConst.map((c: any, i: number) => (

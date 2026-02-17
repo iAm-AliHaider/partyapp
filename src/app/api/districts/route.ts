@@ -4,17 +4,10 @@ import prisma from "@/lib/prisma";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const provinceId = searchParams.get("provinceId");
-  const search = searchParams.get("search");
 
   try {
     const where: any = {};
     if (provinceId) where.provinceId = provinceId;
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { nameUrdu: { contains: search, mode: "insensitive" } },
-      ];
-    }
 
     const districts = await prisma.district.findMany({
       where,
@@ -22,7 +15,8 @@ export async function GET(req: NextRequest) {
         id: true,
         name: true,
         nameUrdu: true,
-        province: { select: { id: true, name: true } },
+        provinceId: true,
+        province: { select: { name: true } },
         _count: { select: { members: true, tehsils: true } },
       },
       orderBy: { name: "asc" },

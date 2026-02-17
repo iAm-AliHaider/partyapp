@@ -1,4 +1,4 @@
-export type Locale = "en" | "ur";
+﻿export type Locale = "en" | "ur";
 
 export const translations = {
   en: {
@@ -113,7 +113,7 @@ export const translations = {
       phone: "Phone",
       email: "Email",
       gender: "Gender",
-      constituency: "Constituency",
+      district: "District",
       status: "Status",
       joined: "Joined",
       editProfile: "✏️ Edit Profile",
@@ -145,9 +145,10 @@ export const translations = {
     // Rankings
     rankings: {
       title: "Rankings",
-      myConstituency: "My Constituency",
+      myDistrict: "My District",
       national: "National",
-      selectConstituency: "Select Constituency",
+      selectProvince: "Select Province",
+      selectDistrict: "Select District",
       noRankings: "No rankings yet",
       rankingsComputed: "Rankings are computed when members join",
       selectToView: "Select a constituency to view rankings",
@@ -289,7 +290,7 @@ export const translations = {
       phone: "فون",
       email: "ای میل",
       gender: "جنس",
-      constituency: "حلقہ",
+      district: "ضلع",
       status: "حیثیت",
       joined: "شمولیت",
       editProfile: "✏️ پروفائل میں ترمیم",
@@ -321,12 +322,13 @@ export const translations = {
     // Rankings
     rankings: {
       title: "درجہ بندی",
-      myConstituency: "میرا حلقہ",
+      myDistrict: "میرا ضلع",
       national: "قومی",
-      selectConstituency: "حلقہ منتخب کریں",
+      selectProvince: "صوبہ منتخب کریں",
+      selectDistrict: "ضلع منتخب کریں",
       noRankings: "ابھی کوئی درجہ بندی نہیں",
       rankingsComputed: "ارکان کی شمولیت پر درجہ بندی ہوتی ہے",
-      selectToView: "درجہ بندی دیکھنے کے لیے حلقہ منتخب کریں",
+      selectToView: "درجہ بندی دیکھنے کے لیے ضلع منتخب کریں",
     },
 
     // Tasks
@@ -365,3 +367,4 @@ export function t(locale: Locale, path: string): string {
   }
   return result || path;
 }
+
