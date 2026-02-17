@@ -58,6 +58,9 @@ export default function AIDashboard() {
   const [provinces, setProvinces] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
 
+  // Bridge status
+  const [bridgeStatus, setBridgeStatus] = useState<{online: boolean, lastHeartbeat: string|null}>({online: false, lastHeartbeat: null});
+
   useEffect(() => {
     if (authStatus === "unauthenticated") router.push("/login");
     if (authStatus === "authenticated") {
@@ -66,6 +69,12 @@ export default function AIDashboard() {
       loadData();
       fetch("/api/provinces").then(r => r.json()).then(d => setProvinces(d.provinces || []));
       fetch("/api/districts").then(r => r.json()).then(d => setDistricts(d.districts || []));
+      fetch("/api/droidclaw/bridge-status").then(r => r.json()).then(d => setBridgeStatus(d)).catch(() => {});
+      // Re-check bridge status every 30s
+      const bridgeInterval = setInterval(() => {
+        fetch("/api/droidclaw/bridge-status").then(r => r.json()).then(d => setBridgeStatus(d)).catch(() => {});
+      }, 30000);
+      return () => clearInterval(bridgeInterval);
     }
   }, [authStatus]);
 
@@ -148,8 +157,8 @@ export default function AIDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 rounded-full">
-            <Wifi size={12} className="text-emerald-600" />
-            <span className="text-caption font-semibold text-emerald-700">Online</span>
+            {bridgeStatus.online ? <Wifi size={12} className="text-emerald-600" /> : <WifiOff size={12} className="text-red-400" />}
+            <span className={`text-caption font-semibold ${bridgeStatus.online ? "text-emerald-700" : "text-red-500"}`}>{bridgeStatus.online ? "Bridge Online" : "Bridge Offline"}</span>
           </div>
           <button onClick={() => { setLoading(true); loadData(); }} className="w-9 h-9 rounded-full bg-surface-tertiary flex items-center justify-center tap-scale">
             <RefreshCw size={16} className="text-label-secondary" />
