@@ -22,6 +22,10 @@ model Party {
   updatedAt   DateTime @updatedAt @map("updated_at")
   members     Member[]
 
+    whatsappGroups  WhatsAppGroup[]
+  droidclawActions DroidClawAction[]
+  socialAccounts  SocialAccount[]
+
   @@map("parties")
 }
 
@@ -34,6 +38,8 @@ model Province {
   members   Member[]
   rankings  Ranking[]
   projectProvinces ProjectProvince[]
+
+    whatsappGroups WhatsAppGroup[]
 
   @@map("provinces")
 }
@@ -52,6 +58,8 @@ model District {
   projectDistricts ProjectDistrict[]
 
   @@unique([name, provinceId])
+    whatsappGroups WhatsAppGroup[]
+
   @@map("districts")
 }
 
@@ -170,6 +178,8 @@ model Member {
   taskAssignments TaskAssignment[]
   projectsCreated Project[] @relation("ProjectCreator")
   documents       Document[] @relation("DocumentUploader")
+
+    droidclawActions DroidClawAction[]
 
   @@map("members")
 }
@@ -539,4 +549,63 @@ enum NotificationType {
   TASK_COMPLETED
   PROJECT_UPDATE
   ANNOUNCEMENT
+}
+
+// ==================== DROIDCLAW / SOCIAL MEDIA ====================
+
+model WhatsAppGroup {
+  id          String   @id @default(cuid())
+  name        String
+  districtId  String?  @map("district_id")
+  district    District? @relation(fields: [districtId], references: [id])
+  provinceId  String?  @map("province_id")
+  province    Province? @relation(fields: [provinceId], references: [id])
+  inviteLink  String?  @map("invite_link")
+  memberCount Int      @default(0) @map("member_count")
+  adminPhone  String?  @map("admin_phone")
+  groupType   String   @default("DISTRICT") // DISTRICT, PROVINCE, NATIONAL, COORDINATION
+  status      String   @default("ACTIVE")   // ACTIVE, ARCHIVED
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  partyId     String   @map("party_id")
+  party       Party    @relation(fields: [partyId], references: [id])
+
+  @@map("whatsapp_groups")
+}
+
+model DroidClawAction {
+  id          String   @id @default(cuid())
+  type        String   // CREATE_GROUP, SEND_ANNOUNCEMENT, BULK_MESSAGE, SOCIAL_POST
+  platform    String   @default("WHATSAPP") // WHATSAPP, FACEBOOK, INSTAGRAM, TWITTER, YOUTUBE
+  status      String   @default("QUEUED")   // QUEUED, RUNNING, COMPLETED, FAILED
+  title       String
+  payload     String?  @db.Text             // JSON workflow data
+  result      String?  @db.Text             // JSON result
+  error       String?
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  createdById String    @map("created_by_id")
+  createdBy   Member    @relation(fields: [createdById], references: [id])
+  partyId     String    @map("party_id")
+  party       Party     @relation(fields: [partyId], references: [id])
+
+  @@map("droidclaw_actions")
+}
+
+model SocialAccount {
+  id          String   @id @default(cuid())
+  platform    String   // WHATSAPP, FACEBOOK, INSTAGRAM, TWITTER, YOUTUBE, TIKTOK
+  accountName String   @map("account_name")
+  accountId   String?  @map("account_id")
+  followers   Int      @default(0)
+  posts       Int      @default(0)
+  status      String   @default("ACTIVE") // ACTIVE, PAUSED, DISCONNECTED
+  lastSync    DateTime? @map("last_sync")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  partyId     String   @map("party_id")
+  party       Party    @relation(fields: [partyId], references: [id])
+
+  @@map("social_accounts")
 }

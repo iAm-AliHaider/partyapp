@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Users, FolderKanban, Megaphone, MapPin, ArrowLeft } from "lucide-react";
+import { BarChart3, Users, FolderKanban, Megaphone, MapPin, ArrowLeft, Zap } from "lucide-react";
 
 const adminTabs = [
   { href: "/admin", label: "Dashboard", icon: BarChart3 },
@@ -10,6 +10,7 @@ const adminTabs = [
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/announcements", label: "Announce", icon: Megaphone },
   { href: "/admin/constituencies", label: "Districts", icon: MapPin },
+  { href: "/admin/ai", label: "AI", icon: Zap },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
