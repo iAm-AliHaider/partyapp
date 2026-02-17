@@ -7,129 +7,149 @@
 
 @layer base {
   :root {
-    --color-party-red: #DC2626;
-    --color-party-gold: #EAB308;
+    --color-accent: #DC2626;
+    --color-gold: #D4A843;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-left: env(safe-area-inset-left, 0px);
-    --safe-right: env(safe-area-inset-right, 0px);
   }
 
   html {
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
-  /* LTR default */
-  html[dir="ltr"] {
-    font-family: "Inter", sans-serif;
-  }
-
-  /* RTL Urdu */
-  html[dir="rtl"] {
-    font-family: "Noto Nastaliq Urdu", "Inter", serif;
-    line-height: 2;
-  }
-
-  html[dir="rtl"] .font-mono,
-  html[dir="rtl"] input[type="tel"],
-  html[dir="rtl"] input[type="number"],
-  html[dir="rtl"] input[type="email"] {
-    font-family: "Inter", monospace;
-    direction: ltr;
-    text-align: left;
+  html[dir="ltr"] { font-family: "Inter", system-ui, sans-serif; }
+  html[dir="rtl"] { font-family: "Noto Nastaliq Urdu", "Inter", serif; line-height: 2; }
+  html[dir="rtl"] .font-mono, html[dir="rtl"] input[type="tel"],
+  html[dir="rtl"] input[type="number"], html[dir="rtl"] input[type="email"] {
+    font-family: "Inter", monospace; direction: ltr; text-align: left;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-surface-secondary text-label-primary antialiased;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
+
+  * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 }
 
 @layer components {
+  /* Safe areas */
   .safe-area-top { padding-top: env(safe-area-inset-top); }
   .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
-  .safe-area-inset {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+
+  /* Page container */
+  .page-container {
+    @apply max-w-lg mx-auto px-5 pb-24 pt-2;
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
   }
 
-  .safe-top-bg {
-    padding-top: env(safe-area-inset-top);
-    margin-top: calc(-1 * env(safe-area-inset-top));
+  /* Cards — Apple style */
+  .card {
+    @apply bg-surface-primary rounded-apple-lg p-4 shadow-apple;
   }
 
+  .card-grouped {
+    @apply bg-surface-primary rounded-apple-lg overflow-hidden shadow-apple;
+  }
+
+  .card-grouped > .card-row {
+    @apply px-4 py-3 flex items-center justify-between;
+  }
+
+  .card-grouped > .card-row + .card-row {
+    @apply border-t border-separator;
+  }
+
+  /* Stat card */
+  .stat-card {
+    @apply card flex flex-col items-center justify-center text-center py-5;
+  }
+
+  /* Buttons */
   .btn-primary {
-    @apply bg-party-red text-white px-6 py-3 rounded-xl font-semibold
-           active:scale-95 transition-transform duration-100
-           hover:bg-party-red-dark disabled:opacity-50;
+    @apply bg-accent text-white px-6 py-3.5 rounded-apple-lg font-semibold text-body
+           active:opacity-70 transition-opacity duration-150 disabled:opacity-40;
   }
 
   .btn-secondary {
-    @apply border-2 border-party-red text-party-red px-6 py-3 rounded-xl font-semibold
-           active:scale-95 transition-transform duration-100
-           hover:bg-party-red/5;
+    @apply bg-surface-tertiary text-label-primary px-6 py-3.5 rounded-apple-lg font-semibold text-body
+           active:opacity-70 transition-opacity duration-150;
   }
 
-  .btn-green {
-    @apply bg-pakistan-green text-white px-6 py-3 rounded-xl font-semibold
-           active:scale-95 transition-transform duration-100
-           hover:bg-pakistan-green-light disabled:opacity-50;
+  .btn-ghost {
+    @apply text-accent font-semibold text-body active:opacity-50 transition-opacity;
   }
 
+  /* Input — iOS style */
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-300 bg-white
-           focus:border-party-red focus:ring-2 focus:ring-party-red/20
-           outline-none transition-all text-sm;
-    min-height: 44px;
+    @apply w-full px-4 py-3.5 rounded-apple-lg bg-surface-tertiary border-0
+           focus:ring-2 focus:ring-accent/20 outline-none transition-all
+           text-body text-label-primary placeholder:text-label-tertiary;
+    min-height: 48px;
   }
 
-  .card {
-    @apply bg-white rounded-2xl p-4 shadow-sm border border-gray-100;
-  }
-
-  .stat-card {
-    @apply card flex flex-col items-center justify-center text-center p-5;
-  }
-
-  .page-container {
-    @apply max-w-lg mx-auto px-4 pb-24 pt-4;
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
-  }
-
+  /* Section title */
   .section-title {
-    @apply text-lg font-bold text-gray-900 mb-3;
+    @apply text-title-sm text-label-primary mb-4;
   }
+
+  /* Pill / Tag */
+  .pill {
+    @apply px-3 py-1.5 rounded-full text-subhead font-medium transition-all;
+  }
+
+  .pill-active {
+    @apply bg-accent text-white;
+  }
+
+  .pill-inactive {
+    @apply bg-surface-tertiary text-label-secondary;
+  }
+
+  /* List row */
+  .list-row {
+    @apply flex items-center gap-3 px-4 py-3.5 bg-surface-primary;
+  }
+
+  .list-row + .list-row {
+    @apply border-t border-separator;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium;
+  }
+
+  .badge-green { @apply bg-emerald-50 text-emerald-700; }
+  .badge-yellow { @apply bg-amber-50 text-amber-700; }
+  .badge-red { @apply bg-red-50 text-red-700; }
+  .badge-blue { @apply bg-blue-50 text-blue-700; }
+  .badge-gray { @apply bg-gray-100 text-gray-600; }
 }
 
-/* RTL-specific adjustments */
-[dir="rtl"] .card {
-  text-align: right;
-}
-
-[dir="rtl"] .border-l-4 {
-  border-left: none;
-  border-right-width: 4px;
-}
-
-/* Keep numbers and codes LTR even in RTL */
-[dir="rtl"] .font-mono {
-  direction: ltr;
-  unicode-bidi: embed;
-}
-
-.skeleton {
-  @apply bg-gray-200 rounded-lg animate-pulse;
-}
-
-/* iPhone notch header — extends color behind status bar */
+/* iPhone notch header */
 @supports (padding-top: env(safe-area-inset-top)) {
-  .notch-header {
-    padding-top: calc(1rem + env(safe-area-inset-top));
-  }
+  .notch-header { padding-top: calc(1rem + env(safe-area-inset-top)); }
 }
+
+/* RTL */
+[dir="rtl"] .card { text-align: right; }
+[dir="rtl"] .font-mono { direction: ltr; unicode-bidi: embed; }
+
+/* Backdrop blur for glass effects */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Skeleton */
+.skeleton { @apply bg-surface-tertiary rounded-apple animate-pulse; }
+
+/* Smooth transitions */
+.tap-scale { @apply active:scale-[0.97] transition-transform duration-100; }

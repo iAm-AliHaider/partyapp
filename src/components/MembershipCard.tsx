@@ -1,7 +1,7 @@
 "use client";
 
 import { QRCodeSVG } from "qrcode.react";
-import Image from "next/image";
+import { MapPin, Star, Hash, Calendar } from "lucide-react";
 
 interface MembershipCardProps {
   name: string;
@@ -18,140 +18,79 @@ interface MembershipCardProps {
 }
 
 export default function MembershipCard({
-  name,
-  membershipNumber,
-  partyName,
-  constituencyCode,
-  constituencyName,
-  referralCode,
-  photoUrl,
-  rank,
-  score,
-  joinDate,
-  location,
+  name, membershipNumber, partyName, constituencyCode, constituencyName,
+  referralCode, photoUrl, rank, score, joinDate, location,
 }: MembershipCardProps) {
-  // Format joining date
   const joinDateObj = new Date(joinDate);
-  const joiningMonth = joinDateObj.toLocaleString("en-US", { month: "long" });
   const joiningYear = joinDateObj.getFullYear();
 
   return (
-    <div className="relative rounded-2xl overflow-hidden shadow-2xl max-w-sm mx-auto" style={{ aspectRatio: "3/4.2" }}>
-      {/* Red textured background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#C41E1E] via-[#B91C1C] to-[#991B1B]" />
-      {/* Subtle fabric texture overlay */}
-      <div className="absolute inset-0 opacity-[0.15]" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='6' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h1v1H0zM3 3h1v1H3z' fill='%23000' fill-opacity='.15'/%3E%3C/svg%3E")`,
-        backgroundSize: "6px 6px",
+    <div className="relative rounded-apple-xl overflow-hidden shadow-apple-lg" style={{ aspectRatio: "1.7/1" }}>
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1C1C1E] via-[#2C2C2E] to-[#1C1C1E]" />
+      <div className="absolute inset-0 opacity-[0.03]" style={{
+        backgroundImage: `radial-gradient(circle at 30% 20%, rgba(220,38,38,0.3) 0%, transparent 50%),
+                          radial-gradient(circle at 80% 80%, rgba(212,168,67,0.2) 0%, transparent 40%)`,
       }} />
 
-      <div className="relative h-full flex flex-col p-0">
-        {/* ═══ TOP: Gold bar + AWAAM RAAJ header ═══ */}
-        <div className="relative">
-          {/* Top gold border */}
-          <div className="h-1 bg-gradient-to-r from-[#B8860B] via-[#FFD700] to-[#B8860B]" />
-
-          <div className="flex items-center gap-3 px-5 py-3">
-            <Image src="/icons/party-logo.png" alt="Party Flag" width={48} height={48} className="drop-shadow-lg" />
-            <h1 className="text-2xl font-extrabold text-white tracking-wide" style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}>
-              AWAAM RAAJ
-            </h1>
+      <div className="relative h-full flex flex-col justify-between p-5">
+        {/* Top: Party name + QR */}
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="text-white/40 text-caption font-medium tracking-widest uppercase">
+              {partyName}
+            </p>
+            <h2 className="text-white text-title-sm mt-0.5 tracking-tight">
+              {name}
+            </h2>
           </div>
-
-          {/* Gold decorative bar */}
-          <div className="h-1.5 bg-gradient-to-r from-transparent via-[#FFD700] to-transparent mx-4" />
+          <div className="bg-white rounded-apple p-1.5">
+            <QRCodeSVG value={`https://awaamraaj.pk/join/${referralCode}`} size={48} level="M" />
+          </div>
         </div>
 
-        {/* ═══ MIDDLE: Photo + Name + QR ═══ */}
-        <div className="flex items-start gap-3 px-5 pt-4 pb-3 flex-1">
-          {/* Photo with gold border */}
-          <div className="shrink-0">
-            <div className="w-28 h-32 rounded-lg overflow-hidden border-[3px] border-[#DAA520] shadow-lg bg-white/10">
-              {photoUrl ? (
-                <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-b from-white/20 to-white/5">
-                  👤
+        {/* Bottom: Details */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-4">
+            {location && (
+              <div className="flex items-center gap-1.5">
+                <MapPin size={12} className="text-white/40" />
+                <span className="text-white/60 text-caption">{location}</span>
+              </div>
+            )}
+            {constituencyCode && (
+              <div className="flex items-center gap-1.5">
+                <Hash size={12} className="text-white/40" />
+                <span className="text-white/60 text-caption">{constituencyCode}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-5">
+              <div>
+                <p className="text-white/40 text-caption">ID</p>
+                <p className="text-white text-subhead font-medium font-mono">{membershipNumber}</p>
+              </div>
+              {rank && (
+                <div>
+                  <p className="text-white/40 text-caption">Rank</p>
+                  <p className="text-white text-subhead font-medium">#{rank}</p>
+                </div>
+              )}
+              {score > 0 && (
+                <div>
+                  <p className="text-white/40 text-caption">Score</p>
+                  <p className="text-white text-subhead font-medium">{score}</p>
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Name + QR */}
-          <div className="flex-1 flex flex-col items-center justify-between h-32">
-            <h2 className="text-lg font-bold text-white text-center leading-tight mt-2" style={{ textShadow: "1px 1px 3px rgba(0,0,0,0.5)" }}>
-              {name.toUpperCase()}
-            </h2>
-            {/* QR Code */}
-            <div className="bg-white p-1.5 rounded-lg shadow-md">
-              <QRCodeSVG value={`https://awaamraaj.pk/join/${referralCode}`} size={64} level="M" />
+            <div className="flex items-center gap-1 text-white/30">
+              <Calendar size={11} />
+              <span className="text-caption">{joiningYear}</span>
             </div>
           </div>
         </div>
-
-        {/* ═══ GOLD WAVE DIVIDER ═══ */}
-        <div className="relative h-6 mx-0">
-          <svg viewBox="0 0 400 24" className="w-full h-full" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#B8860B" />
-                <stop offset="30%" stopColor="#FFD700" />
-                <stop offset="50%" stopColor="#FFF8DC" />
-                <stop offset="70%" stopColor="#FFD700" />
-                <stop offset="100%" stopColor="#B8860B" />
-              </linearGradient>
-            </defs>
-            <path d="M0,12 Q100,0 200,12 T400,12" fill="none" stroke="url(#goldGrad)" strokeWidth="3" />
-            <path d="M0,16 Q100,4 200,16 T400,16" fill="none" stroke="url(#goldGrad)" strokeWidth="1.5" opacity="0.5" />
-          </svg>
-        </div>
-
-        {/* ═══ BOTTOM: Location + Details ═══ */}
-        <div className="px-5 pb-5 space-y-2">
-          {/* Location / Constituency */}
-          <h3 className="text-base font-bold text-white tracking-wide" style={{ textShadow: "1px 1px 3px rgba(0,0,0,0.4)" }}>
-            {location || constituencyName || constituencyCode || "PAKISTAN"}
-          </h3>
-
-          {/* Membership ID */}
-          <div>
-            <span className="text-xs font-bold text-[#FFD700]">Membership ID: </span>
-            <span className="text-xs font-semibold text-white">{membershipNumber}</span>
-          </div>
-
-          {/* Joining Date */}
-          <div>
-            <span className="text-xs font-bold text-[#FFD700]">Joining Year: </span>
-            <span className="text-xs font-semibold text-white">{joiningMonth} {joiningYear}</span>
-          </div>
-
-          {/* Constituency */}
-          {constituencyCode && (
-            <div>
-              <span className="text-xs font-bold text-[#FFD700]">Constituency: </span>
-              <span className="text-xs font-semibold text-white">{constituencyCode}</span>
-            </div>
-          )}
-
-          {/* Score & Rank row */}
-          <div className="flex gap-4 pt-1">
-            {rank && (
-              <div>
-                <span className="text-xs font-bold text-[#FFD700]">Rank: </span>
-                <span className="text-xs font-semibold text-white">#{rank}</span>
-              </div>
-            )}
-            {score > 0 && (
-              <div>
-                <span className="text-xs font-bold text-[#FFD700]">Score: </span>
-                <span className="text-xs font-semibold text-white">{score} pts</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom gold border */}
-        <div className="h-1 bg-gradient-to-r from-[#B8860B] via-[#FFD700] to-[#B8860B]" />
       </div>
     </div>
   );

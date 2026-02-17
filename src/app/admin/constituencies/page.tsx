@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { Search, ChevronDown, ChevronRight, MapPin } from "lucide-react";
 
 export default function AdminDistrictsPage() {
   const { data: session, status } = useSession();
@@ -13,8 +14,6 @@ export default function AdminDistrictsPage() {
   const [selectedProvince, setSelectedProvince] = useState("All");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-
-  // Expandable tehsil state
   const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
   const [tehsils, setTehsils] = useState<Record<string, any[]>>({});
   const [loadingTehsils, setLoadingTehsils] = useState<string | null>(null);
@@ -30,9 +29,7 @@ export default function AdminDistrictsPage() {
       ]).then(([provData, distData]) => {
         setProvinces(provData.provinces || []);
         const dists = distData.districts || [];
-        setDistricts(dists);
-        setFiltered(dists);
-        setLoading(false);
+        setDistricts(dists); setFiltered(dists); setLoading(false);
       });
     }
   }, [status, session, router]);
@@ -45,22 +42,11 @@ export default function AdminDistrictsPage() {
   }, [selectedProvince, search, districts]);
 
   const toggleDistrict = async (districtId: string) => {
-    if (expandedDistrict === districtId) {
-      setExpandedDistrict(null);
-      return;
-    }
+    if (expandedDistrict === districtId) { setExpandedDistrict(null); return; }
     setExpandedDistrict(districtId);
-
-    // Load tehsils if not cached
     if (!tehsils[districtId]) {
       setLoadingTehsils(districtId);
-      try {
-        const res = await fetch(`/api/tehsils?districtId=${districtId}`);
-        const data = await res.json();
-        setTehsils(prev => ({ ...prev, [districtId]: data.tehsils || [] }));
-      } catch {
-        setTehsils(prev => ({ ...prev, [districtId]: [] }));
-      }
+      try { const res = await fetch(`/api/tehsils?districtId=${districtId}`); const data = await res.json(); setTehsils(prev => ({ ...prev, [districtId]: data.tehsils || [] })); } catch { setTehsils(prev => ({ ...prev, [districtId]: [] })); }
       setLoadingTehsils(null);
     }
   };
@@ -69,47 +55,41 @@ export default function AdminDistrictsPage() {
   const covered = districts.filter((d) => (d._count?.members || 0) > 0).length;
   const totalTehsils = districts.reduce((sum, d) => sum + (d._count?.tehsils || 0), 0);
 
-  if (loading) return <div className="animate-pulse space-y-3 p-6">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-200 rounded-xl" />)}</div>;
+  if (loading) return <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="skeleton h-16 rounded-apple-lg" />)}</div>;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Districts & Tehsils</h1>
+      <h1 className="text-title tracking-tight mb-5">Districts</h1>
 
       {/* Summary */}
       <div className="grid grid-cols-4 gap-2 mb-6">
-        <div className="card text-center py-2">
-          <p className="text-lg font-bold text-party-red">{districts.length}</p>
-          <p className="text-[9px] text-gray-500">Districts</p>
-        </div>
-        <div className="card text-center py-2">
-          <p className="text-lg font-bold text-blue-600">{totalTehsils}</p>
-          <p className="text-[9px] text-gray-500">Tehsils</p>
-        </div>
-        <div className="card text-center py-2">
-          <p className="text-lg font-bold text-green-600">{covered}</p>
-          <p className="text-[9px] text-gray-500">Covered</p>
-        </div>
-        <div className="card text-center py-2">
-          <p className="text-lg font-bold text-purple-600">{totalMembers}</p>
-          <p className="text-[9px] text-gray-500">Members</p>
-        </div>
-      </div>
-
-      {/* Province Filter */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-        <button onClick={() => setSelectedProvince("All")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${selectedProvince === "All" ? "bg-party-red text-white" : "bg-gray-100 text-gray-600"}`}>
-          All
-        </button>
-        {provinces.map((p) => (
-          <button key={p.id} onClick={() => setSelectedProvince(p.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${selectedProvince === p.id ? "bg-party-red text-white" : "bg-gray-100 text-gray-600"}`}>
-            {p.name}
-          </button>
+        {[
+          { value: districts.length, label: "Districts", color: "text-accent" },
+          { value: totalTehsils, label: "Tehsils", color: "text-blue-600" },
+          { value: covered, label: "Covered", color: "text-emerald-600" },
+          { value: totalMembers, label: "Members", color: "text-purple-600" },
+        ].map((s, i) => (
+          <div key={i} className="card text-center py-3">
+            <p className={`text-headline ${s.color}`}>{s.value}</p>
+            <p className="text-caption text-label-tertiary">{s.label}</p>
+          </div>
         ))}
       </div>
 
-      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search districts..." className="input-field text-sm mb-4" />
+      {/* Province Filter */}
+      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
+        <button onClick={() => setSelectedProvince("All")}
+          className={`pill ${selectedProvince === "All" ? "pill-active" : "pill-inactive"}`}>All</button>
+        {provinces.map((p) => (
+          <button key={p.id} onClick={() => setSelectedProvince(p.id)}
+            className={`pill ${selectedProvince === p.id ? "pill-active" : "pill-inactive"}`}>{p.name}</button>
+        ))}
+      </div>
+
+      <div className="relative mb-4">
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-label-tertiary" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search districts..." className="input-field !pl-10" />
+      </div>
 
       {/* List */}
       <div className="space-y-2">
@@ -120,96 +100,65 @@ export default function AdminDistrictsPage() {
 
           return (
             <div key={d.id} className="card overflow-hidden">
-              {/* District Row */}
-              <button
-                onClick={() => hasTehsils ? toggleDistrict(d.id) : null}
-                className={`w-full flex justify-between items-center ${hasTehsils ? "cursor-pointer active:bg-gray-50" : ""}`}
-              >
-                <div className="text-left">
-                  <div className="flex items-center gap-2">
-                    {hasTehsils && (
-                      <span className={`text-[10px] transition-transform ${isExpanded ? "rotate-90" : ""}`}>▶</span>
-                    )}
-                    <div>
-                      <p className="font-semibold text-sm">{d.name}</p>
-                      <p className="text-xs text-gray-500">{d.province?.name}</p>
-                    </div>
+              <button onClick={() => hasTehsils ? toggleDistrict(d.id) : null}
+                className={`w-full flex justify-between items-center ${hasTehsils ? "cursor-pointer" : ""}`}>
+                <div className="flex items-center gap-3 text-left">
+                  {hasTehsils ? (
+                    isExpanded ? <ChevronDown size={14} className="text-label-tertiary flex-shrink-0" /> : <ChevronRight size={14} className="text-label-tertiary flex-shrink-0" />
+                  ) : <div className="w-3.5" />}
+                  <div>
+                    <p className="text-body font-medium text-label-primary">{d.name}</p>
+                    <p className="text-caption text-label-tertiary">{d.province?.name}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`text-sm font-bold ${(d._count?.members || 0) > 0 ? "text-party-red" : "text-gray-300"}`}>
-                    {d._count?.members || 0}
-                  </p>
-                  <p className="text-[10px] text-gray-400">
-                    {d._count?.tehsils || 0} tehsils
-                  </p>
+                  <p className={`text-body font-semibold ${(d._count?.members || 0) > 0 ? "text-accent" : "text-label-quaternary"}`}>{d._count?.members || 0}</p>
+                  <p className="text-caption text-label-quaternary">{d._count?.tehsils || 0} tehsils</p>
                 </div>
               </button>
 
-              {/* Expanded Tehsil Breakdown */}
               {isExpanded && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="mt-3 pt-3 border-t border-separator">
                   {loadingTehsils === d.id ? (
-                    <div className="animate-pulse space-y-2 px-4">
-                      {[1, 2, 3].map(i => <div key={i} className="h-8 bg-gray-100 rounded-lg" />)}
-                    </div>
+                    <div className="space-y-2 px-4">{[1, 2, 3].map(i => <div key={i} className="skeleton h-8 rounded-apple" />)}</div>
                   ) : districtTehsils.length > 0 ? (
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center px-2 mb-2">
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Tehsil</p>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Members</p>
-                      </div>
+                    <div className="space-y-2">
                       {districtTehsils.map((th: any) => {
                         const memberCount = th._count?.members || 0;
-                        const totalDistrictMembers = d._count?.members || 1;
-                        const pct = totalDistrictMembers > 0 ? Math.round((memberCount / totalDistrictMembers) * 100) : 0;
+                        const totalDist = d._count?.members || 1;
+                        const pct = totalDist > 0 ? Math.round((memberCount / totalDist) * 100) : 0;
                         return (
                           <div key={th.id} className="px-2">
-                            <div className="flex justify-between items-center mb-0.5">
+                            <div className="flex justify-between items-center mb-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-gray-400">📍</span>
-                                <div>
-                                  <p className="text-xs font-medium">{th.name}</p>
-                                  {th.nameUrdu && <p className="text-[9px] text-gray-400 font-urdu">{th.nameUrdu}</p>}
-                                </div>
+                                <MapPin size={11} className="text-label-quaternary" />
+                                <p className="text-callout font-medium text-label-primary">{th.name}</p>
                               </div>
-                              <div className="text-right">
-                                <span className={`text-xs font-bold ${memberCount > 0 ? "text-party-red" : "text-gray-300"}`}>
-                                  {memberCount}
-                                </span>
-                                {memberCount > 0 && (
-                                  <span className="text-[9px] text-gray-400 ml-1">({pct}%)</span>
-                                )}
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-callout font-semibold ${memberCount > 0 ? "text-accent" : "text-label-quaternary"}`}>{memberCount}</span>
+                                {memberCount > 0 && <span className="text-caption text-label-quaternary">({pct}%)</span>}
                               </div>
                             </div>
-                            {/* Mini progress bar */}
-                            <div className="h-1 bg-gray-100 rounded-full overflow-hidden ml-5">
-                              <div className="h-full rounded-full bg-party-red/60 transition-all" style={{ width: `${pct}%` }} />
+                            <div className="h-1 bg-surface-tertiary rounded-full overflow-hidden ml-5">
+                              <div className="h-full rounded-full bg-accent/60 transition-all" style={{ width: `${pct}%` }} />
                             </div>
                           </div>
                         );
                       })}
-
-                      {/* Unassigned count */}
                       {(() => {
                         const tehsilTotal = districtTehsils.reduce((s: number, th: any) => s + (th._count?.members || 0), 0);
                         const unassigned = (d._count?.members || 0) - tehsilTotal;
-                        if (unassigned > 0) {
-                          return (
-                            <div className="px-2 pt-1 border-t border-dashed border-gray-100">
-                              <div className="flex justify-between items-center">
-                                <span className="text-[10px] text-gray-400 italic ml-5">No tehsil assigned</span>
-                                <span className="text-xs font-bold text-gray-400">{unassigned}</span>
-                              </div>
+                        return unassigned > 0 ? (
+                          <div className="px-2 pt-1.5 border-t border-dashed border-separator">
+                            <div className="flex justify-between items-center">
+                              <span className="text-caption text-label-quaternary italic ml-5">Unassigned</span>
+                              <span className="text-callout font-semibold text-label-quaternary">{unassigned}</span>
                             </div>
-                          );
-                        }
-                        return null;
+                          </div>
+                        ) : null;
                       })()}
                     </div>
-                  ) : (
-                    <p className="text-center text-gray-400 text-xs py-3">No tehsils in this district</p>
-                  )}
+                  ) : <p className="text-callout text-label-tertiary text-center py-3">No tehsils</p>}
                 </div>
               )}
             </div>
@@ -217,7 +166,9 @@ export default function AdminDistrictsPage() {
         })}
       </div>
 
-      <p className="text-xs text-gray-400 text-center mt-4">Showing {filtered.length} of {districts.length} districts • Tap to expand tehsils</p>
+      <p className="text-caption text-label-quaternary text-center mt-4">
+        {filtered.length} of {districts.length} districts · Tap to expand
+      </p>
     </div>
   );
 }

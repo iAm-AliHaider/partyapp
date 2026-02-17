@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function AdminMembersPage() {
   const { data: session, status } = useSession();
@@ -21,9 +22,7 @@ export default function AdminMembersPage() {
     }
   }, [status, session, router]);
 
-  useEffect(() => {
-    fetchMembers();
-  }, [page]);
+  useEffect(() => { fetchMembers(); }, [page]);
 
   const fetchMembers = async () => {
     setLoading(true);
@@ -38,66 +37,53 @@ export default function AdminMembersPage() {
 
   const updateStatus = async (id: string, newStatus: string) => {
     if (!confirm(`Set status to ${newStatus}?`)) return;
-    await fetch(`/api/members/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
-    });
+    await fetch(`/api/members/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }) });
     fetchMembers();
   };
 
   const updateRole = async (id: string, newRole: string) => {
     if (!confirm(`Set role to ${newRole}?`)) return;
-    await fetch(`/api/members/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: newRole }),
-    });
+    await fetch(`/api/members/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: newRole }) });
     fetchMembers();
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Members ({total})</h1>
+        <h1 className="text-title tracking-tight">Members</h1>
+        <span className="badge badge-gray text-subhead">{total}</span>
       </div>
 
       {loading ? (
-        <div className="animate-pulse space-y-3">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-xl" />)}</div>
+        <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="skeleton h-24 rounded-apple-lg" />)}</div>
       ) : (
         <>
           <div className="space-y-3">
             {members.map((m) => (
               <div key={m.id} className="card">
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start mb-3">
                   <div>
-                    <p className="font-semibold">{m.name}</p>
-                    <p className="text-xs text-gray-500">{m.membershipNumber} • {m.constituency?.code || "—"}</p>
-                    <p className="text-xs text-gray-400">Joined {new Date(m.createdAt).toLocaleDateString()}</p>
+                    <p className="text-body font-semibold text-label-primary">{m.name}</p>
+                    <p className="text-caption text-label-tertiary font-mono">{m.membershipNumber} · {m.district?.name || "—"}</p>
+                    <p className="text-caption text-label-quaternary">Joined {new Date(m.createdAt).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-party-red">{m.score}</p>
-                    <p className="text-[10px] text-gray-400">#{m.rank || "—"}</p>
+                    <p className="text-headline text-label-primary">{m.score}</p>
+                    <p className="text-caption text-label-quaternary">#{m.rank || "—"}</p>
                   </div>
                 </div>
 
-                <div className="flex gap-2 mt-3">
-                  <select
-                    defaultValue=""
-                    onChange={(e) => e.target.value && updateStatus(m.id, e.target.value)}
-                    className="text-xs border rounded-lg px-2 py-1 flex-1"
-                  >
+                <div className="flex gap-2">
+                  <select defaultValue="" onChange={(e) => e.target.value && updateStatus(m.id, e.target.value)}
+                    className="text-caption bg-surface-tertiary rounded-apple px-3 py-2 flex-1 outline-none">
                     <option value="">Status...</option>
-                    <option value="ACTIVE">✅ Active</option>
-                    <option value="PENDING">⏳ Pending</option>
-                    <option value="SUSPENDED">🚫 Suspend</option>
-                    <option value="INACTIVE">💤 Inactive</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="SUSPENDED">Suspended</option>
+                    <option value="INACTIVE">Inactive</option>
                   </select>
-                  <select
-                    defaultValue=""
-                    onChange={(e) => e.target.value && updateRole(m.id, e.target.value)}
-                    className="text-xs border rounded-lg px-2 py-1 flex-1"
-                  >
+                  <select defaultValue="" onChange={(e) => e.target.value && updateRole(m.id, e.target.value)}
+                    className="text-caption bg-surface-tertiary rounded-apple px-3 py-2 flex-1 outline-none">
                     <option value="">Role...</option>
                     <option value="MEMBER">Member</option>
                     <option value="ORGANIZER">Organizer</option>
@@ -109,12 +95,17 @@ export default function AdminMembersPage() {
             ))}
           </div>
 
-          {/* Pagination */}
           {total > 20 && (
-            <div className="flex justify-center gap-3 mt-6">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary text-sm px-4">← Prev</button>
-              <span className="py-2 text-sm text-gray-500">Page {page} of {Math.ceil(total / 20)}</span>
-              <button onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= total} className="btn-secondary text-sm px-4">Next →</button>
+            <div className="flex justify-center items-center gap-4 mt-6">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+                className="w-9 h-9 rounded-full bg-surface-tertiary flex items-center justify-center tap-scale disabled:opacity-30">
+                <ChevronLeft size={16} className="text-label-secondary" />
+              </button>
+              <span className="text-subhead text-label-secondary">Page {page} of {Math.ceil(total / 20)}</span>
+              <button onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= total}
+                className="w-9 h-9 rounded-full bg-surface-tertiary flex items-center justify-center tap-scale disabled:opacity-30">
+                <ChevronRight size={16} className="text-label-secondary" />
+              </button>
             </div>
           )}
         </>

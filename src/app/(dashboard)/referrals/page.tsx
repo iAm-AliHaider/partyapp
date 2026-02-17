@@ -5,11 +5,12 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useLanguage } from "@/components/LanguageContext";
+import { Copy, Check, Share2, Users, TrendingUp, Zap, Link2 } from "lucide-react";
 
 export default function ReferralsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { t, locale } = useLanguage();
+  const { t } = useLanguage();
   const [referralCode, setReferralCode] = useState("...");
   const [stats, setStats] = useState<any>(null);
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -22,16 +23,10 @@ export default function ReferralsPage() {
       const userId = (session?.user as any)?.id;
       const code = (session?.user as any)?.referralCode;
       if (code) setReferralCode(code);
-
       if (userId) {
-        fetch(`/api/referrals?memberId=${userId}`)
-          .then((r) => r.json())
-          .then((data) => {
-            setStats(data.stats);
-            setReferrals(data.referrals || []);
-            setLoading(false);
-          })
-          .catch(() => setLoading(false));
+        fetch(`/api/referrals?memberId=${userId}`).then((r) => r.json()).then((data) => {
+          setStats(data.stats); setReferrals(data.referrals || []); setLoading(false);
+        }).catch(() => setLoading(false));
       }
     }
   }, [status, session, router]);
@@ -39,20 +34,10 @@ export default function ReferralsPage() {
   const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/register?ref=${referralCode}`;
 
   const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      const input = document.createElement("input");
-      input.value = shareUrl;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
-      document.body.removeChild(input);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    try { await navigator.clipboard.writeText(shareUrl); } catch {
+      const input = document.createElement("input"); input.value = shareUrl; document.body.appendChild(input); input.select(); document.execCommand("copy"); document.body.removeChild(input);
     }
+    setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
 
   const shareWhatsApp = () => {
@@ -60,92 +45,85 @@ export default function ReferralsPage() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
-  if (loading) {
-    return <div className="page-container"><div className="animate-pulse space-y-4"><div className="h-64 bg-gray-200 rounded-2xl" /><div className="h-20 bg-gray-200 rounded-xl" /></div></div>;
-  }
+  if (loading) return <div className="page-container"><div className="space-y-4 pt-8"><div className="skeleton h-64 rounded-apple-xl" /><div className="skeleton h-20 rounded-apple-lg" /></div></div>;
 
   return (
     <div className="page-container">
-      <h1 className="text-xl font-bold mb-6">{t.referral.title}</h1>
+      <h1 className="text-title tracking-tight mb-6 pt-2">{t.referral.title}</h1>
 
-      {/* QR + Share */}
+      {/* QR Share Card */}
       <div className="card mb-6">
         <div className="flex flex-col items-center text-center">
-          <div className="bg-white p-3 rounded-xl border-2 border-party-red/20 mb-4">
-            <QRCodeSVG value={shareUrl} size={160} level="M" />
+          <div className="bg-surface-secondary p-4 rounded-apple-xl mb-4">
+            <QRCodeSVG value={shareUrl} size={140} level="M" bgColor="transparent" fgColor="#1C1C1E" />
           </div>
-          <p className="text-sm text-gray-500 mb-1">{t.referral.yourCode}</p>
-          <p className="text-2xl font-mono font-bold text-party-red mb-4" dir="ltr">{referralCode}</p>
+          <p className="text-caption text-label-tertiary mb-1">{t.referral.yourCode}</p>
+          <p className="text-title-sm font-mono text-label-primary mb-5" dir="ltr">{referralCode}</p>
           <div className="flex gap-3 w-full">
-            <button onClick={copyToClipboard} className="btn-secondary flex-1 text-sm">
-              {copied ? t.referral.copied : t.referral.copyLink}
+            <button onClick={copyToClipboard} className="btn-secondary flex-1 flex items-center justify-center gap-2">
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+              <span>{copied ? t.referral.copied : t.referral.copyLink}</span>
             </button>
-            <button onClick={shareWhatsApp} className="btn-primary flex-1 text-sm">
-              {t.referral.whatsapp}
+            <button onClick={shareWhatsApp} className="btn-primary flex-1 flex items-center justify-center gap-2">
+              <Share2 size={16} />
+              <span>{t.referral.whatsapp}</span>
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Total Score */}
+      <div className="card bg-gradient-to-br from-[#1C1C1E] to-[#2C2C2E] text-center mb-6">
+        <p className="text-subhead text-white/50">{t.referral.totalScore}</p>
+        <p className="text-title-lg text-white mt-1">{stats?.totalScore || 0}</p>
       </div>
 
       {/* Score Breakdown */}
-      <h2 className="section-title">{t.referral.breakdown}</h2>
-      <div className="space-y-3 mb-6">
-        <div className="card flex justify-between items-center">
-          <div><p className="font-semibold">{t.referral.direct}</p><p className="text-xs text-gray-500">10 {t.referral.pointsEach}</p></div>
-          <div className="text-right">
-            <p className="text-xl font-bold text-party-red">{stats?.directCount || 0}</p>
-            <p className="text-xs text-gray-400">{stats?.directPoints || 0} pts</p>
+      <p className="text-footnote font-semibold text-label-tertiary uppercase tracking-wider mb-3">{t.referral.breakdown}</p>
+      <div className="card-grouped mb-6">
+        {[
+          { label: t.referral.direct, sub: `10 ${t.referral.pointsEach}`, count: stats?.directCount || 0, pts: stats?.directPoints || 0, icon: Users, color: "text-accent bg-accent-50" },
+          { label: t.referral.level2, sub: `5 ${t.referral.pointsEach}`, count: stats?.level2Count || 0, pts: stats?.level2Points || 0, icon: Link2, color: "text-blue-600 bg-blue-50" },
+          { label: t.referral.level3, sub: `2 ${t.referral.pointsEach}`, count: stats?.level3Count || 0, pts: stats?.level3Points || 0, icon: TrendingUp, color: "text-purple-600 bg-purple-50" },
+          { label: t.referral.activeBonus, sub: t.referral.perActive, count: stats?.activeCount || 0, pts: stats?.activePoints || 0, icon: Zap, color: "text-amber-600 bg-amber-50" },
+        ].map((row, i) => (
+          <div key={i} className="list-row">
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${row.color.split(" ")[1]}`}>
+              <row.icon size={17} className={row.color.split(" ")[0]} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-body font-medium text-label-primary">{row.label}</p>
+              <p className="text-caption text-label-tertiary">{row.sub}</p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="text-headline text-label-primary">{row.count}</p>
+              <p className="text-caption text-label-tertiary">{row.pts} pts</p>
+            </div>
           </div>
-        </div>
-        <div className="card flex justify-between items-center">
-          <div><p className="font-semibold">{t.referral.level2}</p><p className="text-xs text-gray-500">5 {t.referral.pointsEach}</p></div>
-          <div className="text-right">
-            <p className="text-xl font-bold text-blue-600">{stats?.level2Count || 0}</p>
-            <p className="text-xs text-gray-400">{stats?.level2Points || 0} pts</p>
-          </div>
-        </div>
-        <div className="card flex justify-between items-center">
-          <div><p className="font-semibold">{t.referral.level3}</p><p className="text-xs text-gray-500">2 {t.referral.pointsEach}</p></div>
-          <div className="text-right">
-            <p className="text-xl font-bold text-purple-600">{stats?.level3Count || 0}</p>
-            <p className="text-xs text-gray-400">{stats?.level3Points || 0} pts</p>
-          </div>
-        </div>
-        <div className="card flex justify-between items-center bg-party-gold/5">
-          <div><p className="font-semibold">{t.referral.activeBonus}</p><p className="text-xs text-gray-500">{t.referral.perActive}</p></div>
-          <div className="text-right">
-            <p className="text-xl font-bold text-party-gold-dark">{stats?.activeCount || 0}</p>
-            <p className="text-xs text-gray-400">{stats?.activePoints || 0} pts</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Total */}
-      <div className="card bg-party-red text-white text-center mb-6">
-        <p className="text-sm opacity-80">{t.referral.totalScore}</p>
-        <p className="text-4xl font-bold">{stats?.totalScore || 0}</p>
+        ))}
       </div>
 
       {/* Recent Referrals */}
-      <h2 className="section-title">{t.referral.recentReferrals}</h2>
+      <p className="text-footnote font-semibold text-label-tertiary uppercase tracking-wider mb-3">{t.referral.recentReferrals}</p>
       {referrals.length > 0 ? (
-        <div className="space-y-2">
+        <div className="card-grouped">
           {referrals.map((ref: any, i: number) => (
-            <div key={i} className="card flex justify-between items-center">
-              <div>
-                <p className="font-medium text-sm">{ref.name}</p>
-                <p className="text-xs text-gray-500">Level {ref.level} • {new Date(ref.joinedAt).toLocaleDateString()}</p>
+            <div key={i} className="list-row">
+              <div className="w-9 h-9 rounded-full bg-surface-tertiary flex items-center justify-center flex-shrink-0">
+                <span className="text-subhead font-semibold text-label-secondary">{ref.name?.charAt(0) || "?"}</span>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${ref.status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                {ref.status}
-              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-body font-medium text-label-primary">{ref.name}</p>
+                <p className="text-caption text-label-tertiary">Level {ref.level} · {new Date(ref.joinedAt).toLocaleDateString()}</p>
+              </div>
+              <span className={`badge ${ref.status === "ACTIVE" ? "badge-green" : "badge-yellow"}`}>{ref.status}</span>
             </div>
           ))}
         </div>
       ) : (
-        <div className="card text-center text-gray-400 py-8">
-          <p className="text-3xl mb-2">🔗</p>
-          <p className="text-sm">{t.referral.noReferrals}</p>
+        <div className="card text-center py-16">
+          <Link2 size={40} className="text-label-quaternary mx-auto mb-3" />
+          <p className="text-body font-medium text-label-secondary">{t.referral.noReferrals}</p>
         </div>
       )}
     </div>
