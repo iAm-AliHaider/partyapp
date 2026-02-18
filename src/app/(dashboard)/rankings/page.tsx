@@ -26,14 +26,15 @@ function Podium({ entries }: { entries: any[] }) {
           if (!entry) return null;
           const c = colors[idx];
           const sz = sizes[idx];
+          const displayName = entry.name || entry.member?.name || "?";
           return (
             <div key={idx} className="flex flex-col items-center">
-              <div className={`w-${sz === 56 ? 14 : sz === 48 ? 12 : 11} h-${sz === 56 ? 14 : sz === 48 ? 12 : 11} rounded-full ${c.bg} ring-2 ${c.ring} flex items-center justify-center mb-1`}
+              <div className={`rounded-full ${c.bg} ring-2 ${c.ring} flex items-center justify-center mb-1`}
                    style={{ width: sz, height: sz }}>
-                <span className="text-headline font-bold">{entry.name?.charAt(0) || "?"}</span>
+                <span className="text-headline font-bold">{displayName.charAt(0)}</span>
               </div>
               <span className="text-lg mb-1">{c.medal}</span>
-              <p className="text-callout font-semibold text-label-primary text-center truncate max-w-[80px]">{entry.name?.split(" ")[0]}</p>
+              <p className="text-callout font-semibold text-label-primary text-center truncate max-w-[80px]">{displayName.split(" ")[0]}</p>
               <p className="text-caption text-label-tertiary">{entry.score} pts</p>
               <div className={`w-20 ${c.bg} rounded-t-apple mt-2 flex items-end justify-center`} style={{ height: heights[idx] }}>
                 <span className={`text-title-sm font-bold ${c.text} mb-2`}>#{entry.rank || idx + 1}</span>
@@ -44,6 +45,15 @@ function Podium({ entries }: { entries: any[] }) {
       </div>
     </div>
   );
+}
+
+/** Normalize leaderboard entries so both national & district have consistent shape */
+function normalizeEntries(raw: any[], type: string): any[] {
+  return raw.map((e) => {
+    if (type === "national") return e;
+    // District: { member: { id, name }, score, rank, memberId, district }
+    return { ...e, id: e.member?.id || e.memberId, name: e.member?.name || e.name };
+  });
 }
 
 export default function RankingsPage() {
@@ -60,6 +70,8 @@ export default function RankingsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const currentUserId = (session?.user as any)?.id;
+  const userDistrictId = (session?.user as any)?.districtId;
+  const userProvinceId = (session?.user as any)?.provinceId;
 
   useEffect(() => {
     if (status === "unauthenticated") { router.push("/login"); return; }
@@ -81,7 +93,7 @@ export default function RankingsPage() {
       if (districtId) params.set("districtId", districtId);
       const res = await fetch(`/api/rankings?${params}`);
       const data = await res.json();
-      setEntries(data.leaderboard || []);
+      setEntries(normalizeEntries(data.leaderboard || [], type));
     } catch { setEntries([]); }
     setLoading(false);
   };
@@ -89,12 +101,28 @@ export default function RankingsPage() {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setSearchQuery("");
-    if (tab === "national") fetchRankings("national");
-    else if (selectedDistrict) fetchRankings("district", selectedDistrict);
+    if (tab === "national") {
+      fetchRankings("national");
+    } else {
+      // Auto-load user's district if available
+      if (userDistrictId) {
+        if (userProvinceId) setSelectedProvince(userProvinceId);
+        setSelectedDistrict(userDistrictId);
+        fetchRankings("district", userDistrictId);
+      } else if (selectedDistrict) {
+        fetchRankings("district", selectedDistrict);
+      } else {
+        setEntries([]);
+        setLoading(false);
+      }
+    }
   };
 
   const filteredEntries = searchQuery
-    ? entries.filter(e => e.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? entries.filter(e => {
+        const name = e.name || e.member?.name || "";
+        return name.toLowerCase().includes(searchQuery.toLowerCase());
+      })
     : entries;
 
   // Find current user in entries
@@ -148,7 +176,7 @@ export default function RankingsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-body font-semibold text-label-primary">{currentUserEntry.name}</p>
+                    <p className="text-body font-semibold text-label-primary">{currentUserEntry.name || currentUserEntry.member?.name}</p>
                     <span className="badge bg-accent text-white">You</span>
                   </div>
                   <p className="text-caption text-label-tertiary">Rank #{currentUserEntry.rank} · {currentUserEntry.score} pts</p>

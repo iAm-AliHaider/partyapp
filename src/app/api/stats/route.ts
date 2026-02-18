@@ -17,6 +17,7 @@ export async function GET() {
       districtCoverage,
       topRecruiters,
       recentMembers,
+      totalProvinces,
     ] = await Promise.all([
       prisma.member.count(),
       prisma.member.count({ where: { status: "ACTIVE" } }),
@@ -48,6 +49,7 @@ export async function GET() {
           district: { select: { name: true } },
         },
       }),
+      prisma.province.count(),
     ]);
 
     const totalDistricts = await prisma.district.count();
@@ -61,6 +63,7 @@ export async function GET() {
       membersThisMonth,
       districtsCovered: districtCoverage.length,
       totalDistricts,
+      totalProvinces,
       topRecruiters,
       recentMembers,
     });
