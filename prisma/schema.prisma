@@ -25,6 +25,7 @@ model Party {
     whatsappGroups  WhatsAppGroup[]
   droidclawActions DroidClawAction[]
   socialAccounts  SocialAccount[]
+  attendanceZones AttendanceZone[]
 
   @@map("parties")
 }
@@ -59,6 +60,8 @@ model District {
 
   @@unique([name, provinceId])
     whatsappGroups WhatsAppGroup[]
+
+  attendanceZones AttendanceZone[]
 
   @@map("districts")
 }
@@ -180,6 +183,8 @@ model Member {
   documents       Document[] @relation("DocumentUploader")
 
     droidclawActions DroidClawAction[]
+
+  attendanceRecords AttendanceRecord[]
 
   @@map("members")
 }
@@ -619,4 +624,58 @@ model BridgeStatus {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   @@map("bridge_status")
+}
+
+
+// ==================== ATTENDANCE SYSTEM ====================
+
+model AttendanceZone {
+  id          String   @id @default(cuid())
+  name        String
+  nameUrdu    String?  @map("name_urdu")
+  description String?
+  latitude    Float
+  longitude   Float
+  radiusMeters Int     @default(100) @map("radius_meters")
+  type        String   @default("office") // office, event, rally, meeting
+  isActive    Boolean  @default(true) @map("is_active")
+  isRecurring Boolean  @default(true) @map("is_recurring")
+  startTime   String?  @map("start_time")
+  endTime     String?  @map("end_time")
+  validFrom   DateTime? @map("valid_from")
+  validUntil  DateTime? @map("valid_until")
+  districtId  String?  @map("district_id")
+  district    District? @relation(fields: [districtId], references: [id])
+  partyId     String   @map("party_id")
+  party       Party    @relation(fields: [partyId], references: [id])
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  records     AttendanceRecord[]
+
+  @@map("attendance_zones")
+}
+
+model AttendanceRecord {
+  id            String   @id @default(cuid())
+  memberId      String   @map("member_id")
+  member        Member   @relation(fields: [memberId], references: [id])
+  zoneId        String   @map("zone_id")
+  zone          AttendanceZone @relation(fields: [zoneId], references: [id])
+  latitude      Float
+  longitude     Float
+  accuracy      Float?
+  distanceMeters Float   @map("distance_meters")
+  status        String   @default("verified") // verified, rejected, manual
+  checkInTime   DateTime @default(now()) @map("check_in_time")
+  checkOutTime  DateTime? @map("check_out_time")
+  photoUrl      String?  @map("photo_url")
+  deviceInfo    String?  @map("device_info")
+  ipAddress     String?  @map("ip_address")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([memberId, checkInTime])
+  @@index([zoneId, checkInTime])
+  @@map("attendance_records")
 }

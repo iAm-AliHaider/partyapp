@@ -12,6 +12,7 @@ const tabs = [
   { href: "/admin/tasks", label: "Tasks", icon: ClipboardCheck },
   { href: "/admin/announcements", label: "Announce", icon: Megaphone },
   { href: "/admin/constituencies", label: "Districts", icon: MapPin },
+  { href: "/admin/attendance", label: "Attendance", icon: MapPin },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/ai", label: "AI", icon: Zap },
 ];

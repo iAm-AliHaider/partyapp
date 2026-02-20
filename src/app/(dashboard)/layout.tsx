@@ -14,6 +14,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const tabs = [
     { href: "/home", label: t.nav.home, icon: "home" as const },
     { href: "/tasks", label: t.nav.tasks, icon: "tasks" as const },
+    { href: "/attendance", label: "Attendance", icon: "tasks" as const },
     { href: "/referrals", label: t.nav.refer, icon: "refer" as const },
     { href: "/rankings", label: t.nav.rank, icon: "rank" as const },
     { href: "/profile", label: t.nav.profile, icon: "profile" as const },
