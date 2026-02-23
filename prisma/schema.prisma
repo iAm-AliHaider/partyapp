@@ -186,6 +186,14 @@ model Member {
 
   attendanceRecords AttendanceRecord[]
 
+  // Social
+  posts             Post[]
+  comments          Comment[]
+  postLikes         PostLike[]
+  commentLikes      CommentLike[]
+  friendshipsSent   Friendship[] @relation("FriendshipRequester")
+  friendshipsReceived Friendship[] @relation("FriendshipAddressee")
+
   @@map("members")
 }
 
@@ -678,4 +686,108 @@ model AttendanceRecord {
   @@index([memberId, checkInTime])
   @@index([zoneId, checkInTime])
   @@map("attendance_records")
+}
+
+
+// ==================== SOCIAL SYSTEM ====================
+
+enum PostType {
+  TEXT
+  PHOTO
+  VIDEO
+  SHARED
+}
+
+enum PostVisibility {
+  PUBLIC
+  FRIENDS
+  DISTRICT
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
+}
+
+model Post {
+  id            String         @id @default(cuid())
+  authorId      String         @map("author_id")
+  author        Member         @relation(fields: [authorId], references: [id])
+  content       String         @db.Text
+  mediaUrls     String[]       @map("media_urls")
+  postType      PostType       @default(TEXT) @map("post_type")
+  visibility    PostVisibility @default(PUBLIC)
+  likesCount    Int            @default(0) @map("likes_count")
+  commentsCount Int            @default(0) @map("comments_count")
+  sharesCount   Int            @default(0) @map("shares_count")
+  sharedPostId  String?        @map("shared_post_id")
+  sharedPost    Post?          @relation("PostShares", fields: [sharedPostId], references: [id])
+  shares        Post[]         @relation("PostShares")
+  comments      Comment[]
+  likes         PostLike[]
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@index([authorId, createdAt(sort: Desc)])
+  @@map("posts")
+}
+
+model Comment {
+  id          String        @id @default(cuid())
+  postId      String        @map("post_id")
+  post        Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId    String        @map("author_id")
+  author      Member        @relation(fields: [authorId], references: [id])
+  content     String        @db.Text
+  likesCount  Int           @default(0) @map("likes_count")
+  parentId    String?       @map("parent_id")
+  parent      Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     Comment[]     @relation("CommentReplies")
+  likes       CommentLike[]
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@index([postId, createdAt])
+  @@map("comments")
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String   @map("post_id")
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  memberId  String   @map("member_id")
+  member    Member   @relation(fields: [memberId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([postId, memberId])
+  @@map("post_likes")
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  commentId String   @map("comment_id")
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  memberId  String   @map("member_id")
+  member    Member   @relation(fields: [memberId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([commentId, memberId])
+  @@map("comment_likes")
+}
+
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String           @map("requester_id")
+  requester   Member           @relation("FriendshipRequester", fields: [requesterId], references: [id])
+  addresseeId String           @map("addressee_id")
+  addressee   Member           @relation("FriendshipAddressee", fields: [addresseeId], references: [id])
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@map("friendships")
 }
