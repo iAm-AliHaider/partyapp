@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/LanguageContext";
-import { Home, ListTodo, Link2, Trophy, User, Bell } from "lucide-react";
+import { Home, Newspaper, ListTodo, Users, User, Bell } from "lucide-react";
 
-const iconMap = { home: Home, tasks: ListTodo, refer: Link2, rank: Trophy, profile: User };
+const iconMap = { home: Home, feed: Newspaper, tasks: ListTodo, friends: Users, profile: User };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,10 +13,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const tabs = [
     { href: "/home", label: t.nav.home, icon: "home" as const },
+    { href: "/feed", label: (t.nav as any).feed || "Feed", icon: "feed" as const },
     { href: "/tasks", label: t.nav.tasks, icon: "tasks" as const },
-    { href: "/attendance", label: "Attendance", icon: "tasks" as const },
-    { href: "/referrals", label: t.nav.refer, icon: "refer" as const },
-    { href: "/rankings", label: t.nav.rank, icon: "rank" as const },
+    { href: "/friends", label: (t.nav as any).friends || "Friends", icon: "friends" as const },
     { href: "/profile", label: t.nav.profile, icon: "profile" as const },
   ];
 
