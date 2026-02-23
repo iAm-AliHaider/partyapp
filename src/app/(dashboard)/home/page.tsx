@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import MembershipCard from "@/components/MembershipCard";
 import Link from "next/link";
 import { useLanguage, LanguageToggle } from "@/components/LanguageContext";
-import { Link2, Trophy, ListTodo, User, TrendingUp, Users, Star, ChevronRight, Bell, Award, Zap, Target, Megaphone } from "lucide-react";
+import { Link2, Trophy, ListTodo, User, TrendingUp, Users, Star, ChevronRight, Bell, Award, Zap, Target, Megaphone, MapPin } from "lucide-react";
 
 function getGreeting(): { text: string; emoji: string } {
   const h = new Date().getHours();
@@ -187,6 +187,7 @@ export default function HomePage() {
           { href: "/referrals", icon: Link2, color: "text-blue-600 bg-blue-50", label: t.home.shareCode, sub: t.home.inviteMembers },
           { href: "/rankings", icon: Trophy, color: "text-amber-600 bg-amber-50", label: t.home.leaderboard, sub: t.home.checkRankings },
           { href: "/tasks", icon: ListTodo, color: "text-purple-600 bg-purple-50", label: t.home.tasks, sub: t.home.campaigns },
+          { href: "/attendance", icon: MapPin, color: "text-teal-600 bg-teal-50", label: (t.home as any).attendance || "Attendance", sub: (t.home as any).checkIn || "Check in & track" },
           { href: "/profile", icon: User, color: "text-gray-600 bg-gray-100", label: t.home.profile, sub: t.home.editDetails },
         ].map((item, i) => (
           <Link key={item.href} href={item.href} className="list-row tap-scale">
