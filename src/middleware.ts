@@ -9,10 +9,16 @@ export default withAuth({
 export const config = {
   matcher: [
     "/home/:path*",
+    "/feed/:path*",
+    "/campaigns/:path*",
+    "/social-hub/:path*",
+    "/tasks/:path*",
+    "/friends/:path*",
     "/referrals/:path*",
     "/rankings/:path*",
     "/notifications/:path*",
     "/profile/:path*",
+    "/attendance/:path*",
     "/admin/:path*",
   ],
 };
