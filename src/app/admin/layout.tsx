@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, Users, FolderKanban, Megaphone, MapPin, Zap, ArrowLeft, ClipboardCheck,
+  BarChart3, Users, FolderKanban, Megaphone, MapPin, Zap, ArrowLeft, ClipboardCheck, Flag,
 } from "lucide-react";
 
 const tabs = [
   { href: "/admin", label: "Dashboard", icon: BarChart3 },
   { href: "/admin/members", label: "Members", icon: Users },
   { href: "/admin/tasks", label: "Tasks", icon: ClipboardCheck },
+  { href: "/admin/campaigns", label: "Campaigns", icon: Flag },
   { href: "/admin/announcements", label: "Announce", icon: Megaphone },
   { href: "/admin/constituencies", label: "Districts", icon: MapPin },
   { href: "/admin/attendance", label: "Attendance", icon: MapPin },
@@ -30,7 +31,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="fixed inset-0 flex flex-col bg-surface-secondary">
-      {/* ─── Fixed Header ─── */}
       <header className="flex-shrink-0 glass border-b border-separator/50 z-30">
         <div className="notch-header px-5 pb-3">
           <div className="flex items-center justify-between">
@@ -49,12 +49,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </header>
 
-      {/* ─── Scrollable Content ─── */}
       <main className="flex-1 overflow-y-auto overscroll-contain">
         <div className="p-5 pb-8 max-w-2xl mx-auto">{children}</div>
       </main>
 
-      {/* ─── Fixed Bottom Tab Bar ─── */}
       <nav className="flex-shrink-0 glass border-t border-separator/50 z-30 safe-area-bottom">
         <div className="flex items-stretch justify-around px-1 pt-1.5 pb-1">
           {tabs.map((tab) => {

@@ -194,6 +194,12 @@ model Member {
   friendshipsSent   Friendship[] @relation("FriendshipRequester")
   friendshipsReceived Friendship[] @relation("FriendshipAddressee")
 
+
+  // Campaign & Social Linking
+  campaignSessions  CampaignSession[]
+  campaignPhotos    CampaignPhoto[]
+  memberSocials     MemberSocial[]
+  hashtagSubmissions HashtagSubmission[]
   @@map("members")
 }
 
@@ -790,4 +796,125 @@ model Friendship {
   @@unique([requesterId, addresseeId])
   @@index([addresseeId, status])
   @@map("friendships")
+}
+
+
+// ==================== CAMPAIGN ACTIVITY SYSTEM ====================
+
+enum CampaignSessionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  FLAGGED
+}
+
+model CampaignSession {
+  id              String                @id @default(cuid())
+  memberId        String                @map("member_id")
+  member          Member                @relation(fields: [memberId], references: [id])
+  status          CampaignSessionStatus @default(ACTIVE)
+  startLat        Float                 @map("start_lat")
+  startLng        Float                 @map("start_lng")
+  endLat          Float?                @map("end_lat")
+  endLng          Float?                @map("end_lng")
+  distanceMeters  Float?                @map("distance_meters")
+  durationMinutes Int?                  @map("duration_minutes")
+  pointsEarned    Int                   @default(0) @map("points_earned")
+  notes           String?
+  adminReview     String?               @map("admin_review") // APPROVED, REJECTED, PENDING
+  reviewedAt      DateTime?             @map("reviewed_at")
+  reviewedBy      String?               @map("reviewed_by")
+  startedAt       DateTime              @default(now()) @map("started_at")
+  endedAt         DateTime?             @map("ended_at")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  photos          CampaignPhoto[]
+  gpsTrail        CampaignGpsPoint[]
+
+  @@index([memberId, startedAt(sort: Desc)])
+  @@map("campaign_sessions")
+}
+
+model CampaignGpsPoint {
+  id          String          @id @default(cuid())
+  sessionId   String          @map("session_id")
+  session     CampaignSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  latitude    Float
+  longitude   Float
+  accuracy    Float?
+  recordedAt  DateTime        @default(now()) @map("recorded_at")
+
+  @@index([sessionId, recordedAt])
+  @@map("campaign_gps_points")
+}
+
+model CampaignPhoto {
+  id              String          @id @default(cuid())
+  sessionId       String          @map("session_id")
+  session         CampaignSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  memberId        String          @map("member_id")
+  member          Member          @relation(fields: [memberId], references: [id])
+  photoUrl        String          @map("photo_url")
+  latitude        Float?
+  longitude       Float?
+  exifTimestamp   DateTime?       @map("exif_timestamp")
+  verified        Boolean         @default(false)
+  flagReason      String?         @map("flag_reason")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@index([sessionId])
+  @@map("campaign_photos")
+}
+
+
+// ==================== MEMBER SOCIAL LINKING + HASHTAG TRACKING ====================
+
+enum SocialPlatform {
+  FACEBOOK
+  TWITTER
+  INSTAGRAM
+  TIKTOK
+  YOUTUBE
+}
+
+model MemberSocial {
+  id          String         @id @default(cuid())
+  memberId    String         @map("member_id")
+  member      Member         @relation(fields: [memberId], references: [id])
+  platform    SocialPlatform
+  handle      String
+  profileUrl  String?        @map("profile_url")
+  verified    Boolean        @default(false)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  @@unique([memberId, platform])
+  @@map("member_socials")
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model HashtagSubmission {
+  id            String           @id @default(cuid())
+  memberId      String           @map("member_id")
+  member        Member           @relation(fields: [memberId], references: [id])
+  platform      SocialPlatform
+  postUrl       String           @map("post_url")
+  hashtag       String
+  screenshotUrl String?          @map("screenshot_url")
+  status        SubmissionStatus @default(PENDING)
+  pointsAwarded Int              @default(0) @map("points_awarded")
+  reviewNote    String?          @map("review_note")
+  reviewedAt    DateTime?        @map("reviewed_at")
+  reviewedBy    String?          @map("reviewed_by")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  @@index([memberId, createdAt(sort: Desc)])
+  @@map("hashtag_submissions")
 }

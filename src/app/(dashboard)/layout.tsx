@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/LanguageContext";
-import { Home, Newspaper, ListTodo, Users, User, Bell } from "lucide-react";
+import { Home, Newspaper, ListTodo, Users, User, Bell, Megaphone, Share2 } from "lucide-react";
 
-const iconMap = { home: Home, feed: Newspaper, tasks: ListTodo, friends: Users, profile: User };
+const iconMap = { home: Home, feed: Newspaper, tasks: ListTodo, friends: Users, profile: User, campaigns: Megaphone, social: Share2 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,8 +14,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const tabs = [
     { href: "/home", label: t.nav.home, icon: "home" as const },
     { href: "/feed", label: (t.nav as any).feed || "Feed", icon: "feed" as const },
-    { href: "/tasks", label: t.nav.tasks, icon: "tasks" as const },
-    { href: "/friends", label: (t.nav as any).friends || "Friends", icon: "friends" as const },
+    { href: "/campaigns", label: "Campaign", icon: "campaigns" as const },
+    { href: "/social-hub", label: "Social", icon: "social" as const },
     { href: "/profile", label: t.nav.profile, icon: "profile" as const },
   ];
 
@@ -23,15 +23,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     (tab) => pathname === tab.href || pathname?.startsWith(tab.href + "/")
   );
   const isNotifications = pathname === "/notifications";
-  const pageTitle = isNotifications ? (t.notifications?.title || "Notifications") : activeTab?.label || "";
+  // Also handle pages not in main tabs (tasks, friends, rankings, referrals)
+  const subPages: Record<string, string> = {
+    "/tasks": t.nav.tasks,
+    "/friends": (t.nav as any).friends || "Friends",
+    "/rankings": (t.nav as any).rankings || "Rankings",
+    "/referrals": (t.nav as any).referrals || "Referrals",
+    "/notifications": t.notifications?.title || "Notifications",
+  };
+  const pageTitle = isNotifications ? (t.notifications?.title || "Notifications") : subPages[pathname || ""] || activeTab?.label || "";
 
-  // Home manages its own header (welcome + name + language toggle)
   const selfHeaderPages = ["/home"];
   const showHeader = !selfHeaderPages.includes(pathname || "");
 
   return (
     <div className="fixed inset-0 flex flex-col bg-surface-secondary">
-      {/* ─── Fixed Header ─── */}
       {showHeader ? (
         <header className="flex-shrink-0 glass border-b border-separator/50 z-30">
           <div className="notch-header px-5 pb-3">
@@ -47,16 +53,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
       ) : (
-        /* Safe area spacer for pages without header (notch protection) */
         <div className="flex-shrink-0 safe-area-top" />
       )}
 
-      {/* ─── Scrollable Content ─── */}
       <main className="flex-1 overflow-y-auto overscroll-contain">
         <div className="max-w-lg mx-auto pb-4">{children}</div>
       </main>
 
-      {/* ─── Fixed Bottom Tab Bar ─── */}
       <nav className="flex-shrink-0 glass border-t border-separator/50 z-30 safe-area-bottom">
         <div className="flex items-stretch justify-around px-2 pt-1.5 pb-1 max-w-lg mx-auto">
           {tabs.map((tab) => {
