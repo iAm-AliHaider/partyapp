@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 
 // Haversine formula — calculate distance between two GPS points in meters
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371000; // Earth radius in meters
+  const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -15,7 +15,16 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
-// GET — List attendance records (admin) or member's own history
+// Get current time in Pakistan (PKT = UTC+5)
+function getPKTTime(): { hours: string; mins: string; timeStr: string } {
+  const now = new Date();
+  const pkt = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+  const hours = pkt.getUTCHours().toString().padStart(2, '0');
+  const mins = pkt.getUTCMinutes().toString().padStart(2, '0');
+  return { hours, mins, timeStr: `${hours}:${mins}` };
+}
+
+// GET — List attendance records
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,13 +32,12 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const zoneId = searchParams.get("zoneId");
   const memberId = searchParams.get("memberId");
-  const date = searchParams.get("date"); // YYYY-MM-DD
+  const date = searchParams.get("date");
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "50");
 
   const where: any = {};
   
-  // Non-admin can only see their own
   const member = await prisma.member.findUnique({ where: { id: session.user.id } });
   if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
   
@@ -73,16 +81,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "latitude, longitude, and zoneId are required" }, { status: 400 });
   }
 
-  // Get member
   const member = await prisma.member.findUnique({ where: { id: session.user.id } });
   if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
 
-  // Get zone
   const zone = await prisma.attendanceZone.findUnique({ where: { id: zoneId } });
   if (!zone) return NextResponse.json({ error: "Zone not found" }, { status: 404 });
   if (!zone.isActive) return NextResponse.json({ error: "This attendance zone is not active" }, { status: 400 });
 
-  // Anti-cheat: Check GPS accuracy (reject if > 150m — likely spoofed or indoor)
+  // Anti-cheat: Check GPS accuracy
   if (accuracy && accuracy > 150) {
     return NextResponse.json({ 
       error: "GPS signal too weak. Please go outside or enable high-accuracy location.",
@@ -90,13 +96,10 @@ export async function POST(req: NextRequest) {
     }, { status: 400 });
   }
 
-  // Anti-cheat: Check time window
+  // Anti-cheat: Check time window (using PKT timezone)
   if (zone.startTime && zone.endTime) {
-    const now = new Date();
-    const hours = now.getHours().toString().padStart(2, '0');
-    const mins = now.getMinutes().toString().padStart(2, '0');
-    const currentTime = `${hours}:${mins}`;
-    if (currentTime < zone.startTime || currentTime > zone.endTime) {
+    const { timeStr } = getPKTTime();
+    if (timeStr < zone.startTime || timeStr > zone.endTime) {
       return NextResponse.json({ 
         error: `Attendance is only allowed between ${zone.startTime} and ${zone.endTime}`,
         code: "OUTSIDE_HOURS"
@@ -117,7 +120,6 @@ export async function POST(req: NextRequest) {
 
   // Check if within radius
   if (distance > zone.radiusMeters) {
-    // Log the rejected attempt too
     await prisma.attendanceRecord.create({
       data: {
         memberId: member.id,
@@ -141,7 +143,7 @@ export async function POST(req: NextRequest) {
     }, { status: 400 });
   }
 
-  // Anti-cheat: Cooldown — check if already checked in within 30 minutes
+  // Anti-cheat: Cooldown — 30 min
   const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
   const recentCheckIn = await prisma.attendanceRecord.findFirst({
     where: {
