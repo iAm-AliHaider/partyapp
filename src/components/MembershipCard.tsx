@@ -28,6 +28,47 @@ export default function MembershipCard({
   const joiningYear = joinDateObj.getFullYear();
   const cardRef = useRef<HTMLDivElement>(null);
   const [sharing, setSharing] = useState(false);
+  const [printing, setPrinting] = useState(false);
+
+  const handlePrintCard = async () => {
+    if (!cardRef.current || printing) return;
+    setPrinting(true);
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: "#1C1C1E",
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Membership Card - ${membershipNumber}</title>
+            <style>
+              body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; }
+              .card-img { max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+              @media print { body { background: white; padding: 0; } .card-img { box-shadow: none; } }
+            </style>
+          </head>
+          <body>
+            <img src="${imgData}" class="card-img" alt="Membership Card" />
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+      }
+    } catch (err) {
+      console.error("Print failed:", err);
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   const handleShareCard = async () => {
     if (!cardRef.current || sharing) return;
@@ -82,7 +123,7 @@ export default function MembershipCard({
               </h2>
             </div>
             <div className="bg-white rounded-apple p-1.5">
-              <QRCodeSVG value={`https://awaamraaj.pk/join/${referralCode}`} size={48} level="M" />
+              <QRCodeSVG value={`https://partyapp-jet.vercel.app/register?ref=${referralCode}`} size={48} level="M" />
             </div>
           </div>
 
@@ -130,14 +171,24 @@ export default function MembershipCard({
         </div>
       </div>
       {showShareButton && (
-        <button
-          onClick={handleShareCard}
-          disabled={sharing}
-          className="absolute bottom-3 right-3 bg-white/10 hover:bg-white/20 disabled:bg-white/10 backdrop-blur-sm rounded-full p-2.5 transition-all tap-scale"
-          title="Share Card"
-        >
-          <Share2 size={18} className="text-white" />
-        </button>
+        <div className="absolute bottom-3 right-3 flex gap-2">
+          <button
+            onClick={handlePrintCard}
+            disabled={printing}
+            className="bg-white/10 hover:bg-white/20 disabled:bg-white/10 backdrop-blur-sm rounded-full p-2.5 transition-all tap-scale"
+            title="Print Card"
+          >
+            <Download size={18} className="text-white" />
+          </button>
+          <button
+            onClick={handleShareCard}
+            disabled={sharing}
+            className="bg-white/10 hover:bg-white/20 disabled:bg-white/10 backdrop-blur-sm rounded-full p-2.5 transition-all tap-scale"
+            title="Share Card"
+          >
+            <Share2 size={18} className="text-white" />
+          </button>
+        </div>
       )}
     </div>
   );
