@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import { useLanguage } from "@/components/LanguageContext";
-import { Trophy, Search, Medal, TrendingUp, Crown } from "lucide-react";
+import { Trophy, Search, Medal, TrendingUp, Crown, Share2 } from "lucide-react";
 
 function Podium({ entries }: { entries: any[] }) {
   if (entries.length < 3) return null;
@@ -167,6 +167,21 @@ export default function RankingsPage() {
           {/* Podium for top 3 */}
           <Podium entries={entries} />
 
+          {/* Why Rank Matters */}
+          <div className="card mb-6 bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-100">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                <Trophy size={18} className="text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-body font-semibold text-purple-900 mb-1">Why Rank Matters</p>
+                <p className="text-caption text-purple-700 leading-relaxed">
+                  Your ranking determines your eligibility for party candidacy. Top recruiters in each district are recognized as district leaders and may be selected as candidates for upcoming elections.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Current user highlight */}
           {currentUserEntry && (
             <div className="card bg-accent-50 border border-accent/20 mb-4">
@@ -181,8 +196,17 @@ export default function RankingsPage() {
                   </div>
                   <p className="text-caption text-label-tertiary">Rank #{currentUserEntry.rank} · {currentUserEntry.score} pts</p>
                 </div>
-                <div className="text-right">
+                <div className="flex items-center gap-2">
                   <p className="text-title-sm text-accent font-bold">#{currentUserEntry.rank}</p>
+                  <button
+                    onClick={() => {
+                      const text = `I ranked #${currentUserEntry.rank} in ${activeTab === "national" ? "Pakistan" : "my district"} on عوام راج! ${currentUserEntry.score} points. Join me: partyapp-jet.vercel.app`;
+                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+                    }}
+                    className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center"
+                  >
+                    <Share2 size={14} className="text-white" />
+                  </button>
                 </div>
               </div>
             </div>

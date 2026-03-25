@@ -1,4 +1,5 @@
 import prisma from "./prisma";
+import { NotificationType } from "@prisma/client";
 
 // Points configuration
 const POINTS = {
@@ -141,6 +142,23 @@ export async function processReferral(referrerId: string, refereeId: string): Pr
     if (grandReferrer?.referredById) {
       await updateMemberScore(grandReferrer.referredById);
     }
+  }
+
+  // Notify referrer that someone used their code
+  const referee = await prisma.member.findUnique({
+    where: { id: refereeId },
+    select: { name: true, membershipNumber: true },
+  });
+
+  if (referee && referrerId) {
+    await prisma.notification.create({
+      data: {
+        memberId: referrerId,
+        title: "New Referral!",
+        body: `${referee.name} (${referee.membershipNumber}) joined using your referral code`,
+        type: NotificationType.REFERRAL_NEW,
+      },
+    });
   }
 }
 
