@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useLanguage } from "@/components/LanguageContext";
-import { Copy, Check, Share2, Users, TrendingUp, Zap, Link2, Target, Send } from "lucide-react";
+import { Copy, Check, Share2, Users, TrendingUp, Zap, Link2, Target, Send, MessageSquare } from "lucide-react";
 
 function MilestoneBar({ current, milestones }: { current: number; milestones: { count: number; label: string }[] }) {
   const nextMilestone = milestones.find(m => m.count > current) || milestones[milestones.length - 1];
@@ -104,6 +104,11 @@ export default function ReferralsPage() {
     window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`, "_blank");
   };
 
+  const shareSMS = () => {
+    const text = `${t.referral.shareMessage || "Join our movement!"}\n${shareUrl}`;
+    window.open(`sms:+92?body=${encodeURIComponent(text)}`, "_blank");
+  };
+
   const copyText = () => {
     const text = `${t.referral.shareMessage || "Join our movement!"}\n${shareUrl}\n\nReferral Code: ${referralCode}`;
     navigator.clipboard.writeText(text).catch(() => {});
@@ -148,9 +153,9 @@ export default function ReferralsPage() {
               <Send size={14} />
               <span>Telegram</span>
             </button>
-            <button onClick={copyText} className="btn-secondary flex-1 flex items-center justify-center gap-2 !py-2.5">
-              <Copy size={14} />
-              <span>Copy Text</span>
+            <button onClick={shareSMS} className="btn-secondary flex-1 flex items-center justify-center gap-2 !py-2.5 !bg-green-50 !text-green-600">
+              <MessageSquare size={14} />
+              <span>SMS</span>
             </button>
           </div>
         </div>

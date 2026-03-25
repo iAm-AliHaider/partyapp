@@ -102,6 +102,14 @@ export async function POST(req: NextRequest) {
     // Process referral chain if referred
     if (referredById) {
       await processReferral(referredById, member.id);
+      await prisma.notification.create({
+        data: {
+          memberId: referredById,
+          type: "REFERRAL_NEW",
+          title: "New Referral!",
+          body: `${name} joined using your referral code. You earned 10 points!`,
+        },
+      });
     }
 
     // Notify Boss via WhatsApp
