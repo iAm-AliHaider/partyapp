@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useLanguage } from "@/components/LanguageContext";
+import InstallPrompt from "@/components/InstallPrompt";
 import {
   Home, Newspaper, Megaphone, Users, MoreHorizontal, Bell,
   User, ListTodo, Share2, Trophy, UserPlus, MapPin, X, ChevronRight
@@ -155,6 +156,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       )}
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 }
