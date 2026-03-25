@@ -1,7 +1,7 @@
 "use client";
 
 import { QRCodeSVG } from "qrcode.react";
-import { MapPin, Hash, Calendar, Share2 } from "lucide-react";
+import { MapPin, Hash, Calendar, Share2, Download } from "lucide-react";
 import { useRef, useState } from "react";
 import html2canvas from "html2canvas";
 

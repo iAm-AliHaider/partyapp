@@ -68,6 +68,7 @@ export default function RankingsPage() {
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [rankHistory, setRankHistory] = useState<any[]>([]);
 
   const currentUserId = (session?.user as any)?.id;
   const userDistrictId = (session?.user as any)?.districtId;
@@ -127,6 +128,17 @@ export default function RankingsPage() {
 
   // Find current user in entries
   const currentUserEntry = entries.find(e => e.id === currentUserId || e.memberId === currentUserId);
+
+  useEffect(() => {
+    if (currentUserEntry && selectedDistrict) {
+      fetch(`/api/rankings/history?memberId=${currentUserId}&districtId=${selectedDistrict}`)
+        .then(r => r.json())
+        .then(data => setRankHistory(data.history || []))
+        .catch(() => setRankHistory([]));
+    } else {
+      setRankHistory([]);
+    }
+  }, [currentUserId, currentUserEntry, selectedDistrict]);
 
   return (
     <div className="px-5 py-4">
@@ -208,6 +220,39 @@ export default function RankingsPage() {
                     <Share2 size={14} className="text-white" />
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Rank Trend Chart */}
+          {currentUserEntry && rankHistory.length > 1 && (
+            <div className="card mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp size={16} className="text-purple-600" />
+                <p className="text-body font-semibold text-label-primary">Your Rank Trend</p>
+              </div>
+              <div className="flex items-end gap-2 h-24">
+                {rankHistory.map((h, i) => {
+                  const maxRank = Math.max(...rankHistory.map(r => r.rank));
+                  const minRank = Math.min(...rankHistory.map(r => r.rank));
+                  const range = maxRank - minRank || 1;
+                  const height = Math.max(8, 100 - ((h.rank - minRank) / range) * 92);
+                  const isCurrent = i === rankHistory.length - 1;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <div className="w-full flex flex-col items-center justify-end" style={{ height: 72 }}>
+                        <div
+                          className={`w-full rounded-t-sm transition-all ${isCurrent ? "bg-accent" : "bg-purple-200"}`}
+                          style={{ height: `${height}%` }}
+                        />
+                      </div>
+                      <span className={`text-caption ${isCurrent ? "font-semibold text-accent" : "text-label-tertiary"}`}>
+                        #{h.rank}
+                      </span>
+                      <span className="text-caption text-label-quaternary">{h.period?.slice(5)}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
