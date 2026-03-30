@@ -1,0 +1,23 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  trigger-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger PartyApp Deploy
+        run: |
+          curl -s -X POST "https://YOUR_PUBLIC_WEBHOOK_URL/webhook/github" \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: push" \
+            -H "X-GitHub-Delivery: ${{ github.run_id }}" \
+            -d '{
+              "repository": {"full_name": "${{ github.repository }}"},
+              "ref": "refs/heads/master",
+              "sender": {"login": "${{ github.actor }}"},
+              "head_commit": {"message": "${{ github.event.head_commit.message }}"}
+            }'
